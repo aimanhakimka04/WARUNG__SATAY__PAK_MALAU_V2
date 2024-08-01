@@ -259,8 +259,6 @@ if (in_array($_SERVER['HTTP_HOST'], $allowed_urls) && (!isset($_GET['page']) || 
 </html>
 
 
-
-
 <script>
   
 </script>
