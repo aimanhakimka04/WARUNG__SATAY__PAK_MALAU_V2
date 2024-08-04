@@ -1,5 +1,5 @@
 <?php
-header('Content-Type: application/json');
+header('Content-Type: application/json'); //ini untuk set content type kepada json. contoh content type yang lain ialah text/html
 
 // Database connection
 $host = 'localhost';
@@ -14,7 +14,7 @@ if ($conn->connect_error) {
 }
 
 $predefined_responses = [
-    'hello' => 'Hello! How can I help you today?',
+    'hello' => 'Hello! How can I help you today?', // => adalah untuk assign value kepada key
     'hi' => 'Hi there! What can I do for you?',
     'how are you' => 'I am just a bot, but I am here to help you!',
     'bye' => 'Goodbye! Have a great day!',
@@ -46,7 +46,7 @@ function findClosestMatch($input, $responses) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $raw_input = file_get_contents('php://input');
+    $raw_input = file_get_contents('php://input'); // Read the raw input
     $input = json_decode($raw_input, true);
 
     if ($input === null) {
