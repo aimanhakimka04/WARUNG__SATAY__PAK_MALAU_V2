@@ -47,7 +47,7 @@ function findClosestMatch($input, $responses) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $raw_input = file_get_contents('php://input'); // Read the raw input
-    $input = json_decode($raw_input, true);
+    $input = json_decode($raw_input, true); //true means the data will be returned as an associative array
 
     if ($input === null) {
         echo json_encode(['error' => 'Invalid JSON input']);

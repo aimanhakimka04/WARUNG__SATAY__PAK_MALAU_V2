@@ -308,7 +308,7 @@ function signup()
     if ($_FILES['img']['tmp_name'] != '') {
         $fname = strtotime(date('Y-m-d H:i')) . '_' . $_FILES['img']['name'];
         $move = move_uploaded_file($_FILES['img']['tmp_name'], '../assets/img/' . $fname);
-        $data .= ", img_path = '$fname' ";
+        $data .= ", img_path = '$fname' "; //.= is used to append the string
     }
 
     // Insert or update the product

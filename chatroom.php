@@ -1,7 +1,12 @@
-<?php session_start(); ?>
+<?php
+session_start();
+
+
+?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,6 +23,7 @@
             height: 100vh;
             margin: 0;
         }
+
         #chat {
             background-color: #fff;
             border-radius: 10px;
@@ -26,10 +32,12 @@
             max-width: 100%;
             padding: 20px;
         }
+
         h1 {
             text-align: center;
             color: #333;
         }
+
         #messages {
             height: 300px;
             overflow-y: auto;
@@ -39,14 +47,22 @@
             margin-bottom: 20px;
             background-color: #fafafa;
         }
+
         .message {
             margin: 10px 0;
             display: flex;
             justify-content: flex-start;
+            flex-direction: column;
         }
+
         .message.right {
-            justify-content: flex-end;
+            align-items: flex-end;
         }
+
+        .message.left {
+            align-items: flex-start;
+        }
+
         .bubble {
             max-width: 70%;
             padding: 10px;
@@ -54,6 +70,7 @@
             position: relative;
             font-size: 14px;
         }
+
         .bubble:before {
             content: "";
             position: absolute;
@@ -61,28 +78,39 @@
             height: 0;
             border-style: solid;
         }
+
         .bubble.right {
             background-color: #007BFF;
             color: #fff;
             align-self: flex-end;
         }
+
         .bubble.right:before {
             top: 0;
             right: -10px;
             border-width: 10px 0 10px 10px;
             border-color: transparent transparent transparent #007BFF;
         }
+
         .bubble.left {
             background-color: #e0e0e0;
             color: #333;
             align-self: flex-start;
         }
+
         .bubble.left:before {
             top: 0;
             left: -10px;
             border-width: 10px 10px 10px 0;
             border-color: transparent #e0e0e0 transparent transparent;
         }
+
+        .timestamp {
+            font-size: 10px;
+            color: #888;
+            margin-top: 5px;
+        }
+
         input[type="text"] {
             width: calc(100% - 100px);
             padding: 10px;
@@ -90,6 +118,7 @@
             border-radius: 5px;
             margin-right: 10px;
         }
+
         button {
             padding: 10px 20px;
             border: none;
@@ -99,18 +128,22 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
+
         button:hover {
             background-color: #0056b3;
         }
+
         #button-group {
             display: flex;
             justify-content: space-between;
         }
     </style>
 </head>
+
 <body>
     <div id="chat">
         <h1>Chatbot</h1>
+        <div id="user-email" style="display: none;"><?php echo $_SESSION['login_email'] ?></div>
         <div id="messages"></div>
         <div id="input-group">
             <input type="text" id="user-input" placeholder="Type a message..." />
@@ -122,16 +155,73 @@
     </div>
 
     <script>
-        $(document).ready(function(){
-            var conn = new WebSocket('ws://localhost:8080');
-            conn.onopen = function(e) {
-                console.log("Connection established!");
-            };
-            
-            conn.onmessage = function(e) {
-                console.log(e.data);
-            };
-        })
+          function getWebSocketURL() {
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost') {
+                return 'ws://localhost:8080';
+            } else {
+                return 'wss://72b2-183-78-120-148.ngrok-free.app';
+            }
+        }
+
+        function generateClientId() {
+            return 'client-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        const clientId = generateClientId();
+        var conn = new WebSocket(getWebSocketURL());
+
+        conn.onopen = function(e) {
+            console.log("Connection established!");
+        };
+
+        conn.onmessage = function(e) {
+            console.log(e.data);
+
+            var data = JSON.parse(e.data);
+
+            const messagesDiv = document.getElementById('messages');
+            const timestamp = new Date().toLocaleTimeString();
+
+            if (data.clientId === clientId) {
+                messagesDiv.innerHTML += `<div class="message right"><div class="bubble right"><strong>You:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
+            } else {
+                messagesDiv.innerHTML += `<div class="message left"><div class="bubble left"><strong>${data.usremail}:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
+            }
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        };
+
+        document.getElementById('user-input').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const userInput = document.getElementById('user-input').value;
+            const userEmail = document.getElementById('user-email').textContent;
+            const timestamp = new Date().toLocaleTimeString();
+
+            if (userInput.trim() === '') return;
+
+            var data = {
+                clientId: clientId,
+                usremail: userEmail,
+                msg: userInput
+            }
+
+            conn.send(JSON.stringify(data));
+
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            document.getElementById('user-input').value = '';
+        }
+
+        function connectToAgent() {
+            // Your connect to agent logic here
+        }
     </script>
     </body>
+
 </html>
