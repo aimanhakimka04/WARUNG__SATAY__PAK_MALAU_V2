@@ -43,6 +43,12 @@ class ChatRooms{
 
 		$this->connect = $conn;
     }
+
+    function __destruct()
+	{ // this function will be called automatically at the end of the class
+		$this->connect->close();
+		ob_end_flush();
+	}
     function save_chat(){
         $query = "INSERT INTO chatrooms(userid, msg, created_on) VALUES(?, ?, ?)"; //: is a placeholder for the actual value from the user
         $stmt = $this->connect->prepare($query);
