@@ -9,6 +9,8 @@ class ChatRooms{
     private $created_on;
     protected $connect;
 
+    private $role;
+
     public function setChatId($chat_id){
         $this->chat_id = $chat_id;
     }
@@ -37,6 +39,13 @@ class ChatRooms{
         return $this->created_on;
     }
 
+    function setRole($role){
+        $this->role = $role;
+    }
+    function getRole(){
+        return $this->role;
+    }
+
     public function __construct(){
         ob_start(); // this will turn on output buffering  the buffering (temporary storage) of output before it is flushed (sent and discarded) to the browser (in a web context) or to the shell (on the command line).
 		include 'admin/db_connect.php';
@@ -50,15 +59,15 @@ class ChatRooms{
 		ob_end_flush();
 	}
     function save_chat(){
-        $query = "INSERT INTO chatrooms(userid, msg, created_on) VALUES(?, ?, ?)"; //: is a placeholder for the actual value from the user
+        $query = "INSERT INTO chatrooms(userid, msg, created_on, role_user) VALUES(?, ?, ?, ?)"; //: is a placeholder for the actual value from the user
         $stmt = $this->connect->prepare($query);
-        $stmt->bind_param("iss", $this->user_id, $this->message, $this->created_on);
+        $stmt->bind_param("isss", $this->user_id, $this->message, $this->created_on, $this->role);
         $stmt->execute();
         $stmt->close();
 
        
 
-        
+
        
     }
 

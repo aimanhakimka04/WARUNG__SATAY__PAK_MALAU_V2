@@ -1,23 +1,31 @@
 <?php
-
 namespace MyApp;
+
 
 use ChatRooms;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 
 require dirname(__DIR__) . "/database/ChatRooms.php";
-require dirname(__DIR__) . "/admin/db_connect.php";
+
 
 class Chat implements MessageComponentInterface
 {
     protected $clients;
+
     protected $clientIds;
+
+    protected $connect;
+
+    
 
     public function __construct()
     {
         $this->clients = new \SplObjectStorage;
         $this->clientIds = [];
+        require dirname(__DIR__) . "/admin/db_connect.php";
+        ob_start();
+        $this->connect = $conn;
     }
 
     public function onOpen(ConnectionInterface $conn)
@@ -41,10 +49,30 @@ class Chat implements MessageComponentInterface
         $chat_object->setUserId($data['client_id']);
         $chat_object->setMessage($data['msg']);
         $chat_object->setCreatedOn(date('Y-m-d H:i:s'));
+        $chat_object->setRole($data['role']);
         $chat_object->save_chat();
-
+        $userid = $data['userid'];
+        $role = $data['role']; 
         // Include the unique client ID in the message
-
+     
+            
+        //get user data by userid
+        if($role == 'admin'){
+            $query = "SELECT * FROM users WHERE id = $userid";
+            $stmt = $this->connect->prepare($query);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            $data['usremail'] = $row['email'];
+            }
+        else{
+                $query = "SELECT * FROM user_info WHERE user_id = $userid";
+                $stmt = $this->connect->prepare($query);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $row = $result->fetch_assoc();
+                $data['usremail'] = $row['email'];
+            }
 
         foreach ($this->clients as $client) {
             if ($from == $client) {

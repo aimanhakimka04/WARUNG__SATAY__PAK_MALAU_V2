@@ -1,6 +1,12 @@
 <?php
 session_start();
 
+$role = $_SESSION['user_role'];
+if($role == 'admin'){
+    $userid = $_SESSION['login_id'];
+}else if($role == 'customer'){
+    $userid = $_SESSION['login_user_id'];
+}
 
 ?>
 
@@ -143,7 +149,6 @@ session_start();
 <body>
     <div id="chat">
         <h1>Chatbot</h1>
-        <div id="user-email" style="display: none;"><?php echo $_SESSION['login_email'] ?></div>
         <div id="messages"></div>
         <div id="input-group">
             <input type="text" id="user-input" placeholder="Type a message..." />
@@ -155,6 +160,8 @@ session_start();
     </div>
 
     <script>
+        const userid = <?php echo $userid; ?>;
+        const role = "<?php echo $role; ?>";
           function getWebSocketURL() {
             const hostname = window.location.hostname;
             if (hostname === 'localhost') {
@@ -164,6 +171,7 @@ session_start();
             }
         }
 
+        // Generate a random client ID
         function generateClientId() {
             return 'client-' + Math.random().toString(36).substr(2, 9);
         }
@@ -183,7 +191,7 @@ session_start();
             const messagesDiv = document.getElementById('messages');
             const timestamp = new Date().toLocaleTimeString();
 
-            if (data.clientId === clientId) {
+            if (data.userid === userid) {
                 messagesDiv.innerHTML += `<div class="message right"><div class="bubble right"><strong>You:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
             } else {
                 messagesDiv.innerHTML += `<div class="message left"><div class="bubble left"><strong>${data.usremail}:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
@@ -200,14 +208,14 @@ session_start();
 
         function sendMessage() {
             const userInput = document.getElementById('user-input').value;
-            const userEmail = document.getElementById('user-email').textContent;
             const timestamp = new Date().toLocaleTimeString();
 
             if (userInput.trim() === '') return;
 
             var data = {
+                role: role,
+                userid: userid,
                 clientId: clientId,
-                usremail: userEmail,
                 msg: userInput
             }
 

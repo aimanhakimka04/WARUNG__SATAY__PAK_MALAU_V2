@@ -31,6 +31,7 @@ class Action
 				foreach ($result as $key => $value) { // => is used to assign value to the key
 					if ($key != 'password' && !is_numeric($key))
 						$_SESSION['login_' . $key] = $value;
+						$_SESSION['user_role'] = "admin";
 				}
 					return 1;
 				
@@ -53,6 +54,7 @@ class Action
 				}
 				$ip = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : (isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
 				$this->db->query("UPDATE cart set user_id = '" . $_SESSION['login_user_id'] . "' where client_ip ='$ip' ");
+				$_SESSION['user_role'] = "customer";
 				return 1;
 			}
 		}

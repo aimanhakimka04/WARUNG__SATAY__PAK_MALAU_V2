@@ -65,6 +65,7 @@ if (isset($_GET['code'])) { //TAKE VALUE THAT PROVIDED FROM GOOGLE
             foreach ($result as $key => $value) { //$key is the index of the array, $value is the value of the array and result is the array
                 if ($key != 'password' && !is_numeric($key))
                     $_SESSION['login_' . $key] = $value;
+                    $_SESSION['user_role'] = 'customer';
             }
             $ip = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : (isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR']);
             $db->query("UPDATE cart set user_id = '" . $_SESSION['login_user_id'] . "' where client_ip ='$ip' ");
