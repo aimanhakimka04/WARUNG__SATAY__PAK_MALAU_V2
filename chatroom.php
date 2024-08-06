@@ -167,7 +167,7 @@ if($role == 'admin'){
             if (hostname === 'localhost') {
                 return 'ws://localhost:8080';
             } else {
-                return 'wss://72b2-183-78-120-148.ngrok-free.app';
+                return 'wss://70bc-183-78-114-120.ngrok-free.app';
             }
         }
 
