@@ -1,13 +1,21 @@
 <?php
+
+use Google\Service\CloudControlsPartnerService\Console;
+
 session_start();
 
 $role = $_SESSION['user_role'];
-if($role == 'admin'){
+if ($role == 'admin') {
     $userid = $_SESSION['login_id'];
-}else if($role == 'customer'){
+} else if ($role == 'customer') {
     $userid = $_SESSION['login_user_id'];
 }
 
+require('database/ChatRooms.php');
+
+$chat_object = new ChatRooms();
+
+$chat_data = $chat_object->get_all_chat_data();
 ?>
 
 <!DOCTYPE html>
@@ -149,7 +157,25 @@ if($role == 'admin'){
 <body>
     <div id="chat">
         <h1>Chatbot</h1>
-        <div id="messages"></div>
+        <div id="messages">
+            <?php
+            foreach ($chat_data as $row) {
+                if($userid == $row['userid'] && $role == $row['role_user']) {
+                    echo '<div class="message right"><div class="bubble right"><strong>You:</strong> ' . $row['msg'] . '</div><div class="timestamp">' . $row['created_on'] . '</div></div>';
+                } else {
+                    echo '<div class="message left"><div class="bubble left"><strong>testing user:</strong> ' . $row['msg'] . '</div><div class="timestamp">' . $row['created_on'] . '</div></div>';
+                    //print in  console userid row userid
+                    echo '<script>console.log('.$userid.')</script>';
+                    echo '<script>console.log('.$row['userid'].')</script>';
+                    //role user
+                    echo '<script>console.log("'.$role.'")</script>';
+                    echo '<script>console.log("'.$row['role_user'].'")</script>';
+                }
+            }
+
+            ?>
+        </div>
+
         <div id="input-group">
             <input type="text" id="user-input" placeholder="Type a message..." />
             <button onclick="sendMessage()">Send</button>
@@ -162,7 +188,8 @@ if($role == 'admin'){
     <script>
         const userid = <?php echo $userid; ?>;
         const role = "<?php echo $role; ?>";
-          function getWebSocketURL() {
+
+        function getWebSocketURL() {
             const hostname = window.location.hostname;
             if (hostname === 'localhost') {
                 return 'ws://localhost:8080';
@@ -230,6 +257,6 @@ if($role == 'admin'){
             // Your connect to agent logic here
         }
     </script>
-    </body>
+</body>
 
 </html>

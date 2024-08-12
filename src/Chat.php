@@ -46,7 +46,7 @@ class Chat implements MessageComponentInterface
 
         $chat_object = new ChatRooms();
         $data['client_id'] = $this->clientIds[$from->resourceId];
-        $chat_object->setUserId($data['client_id']);
+        $chat_object->setUserId($data['userid']);
         $chat_object->setMessage($data['msg']);
         $chat_object->setCreatedOn(date('Y-m-d H:i:s'));
         $chat_object->setRole($data['role']);
