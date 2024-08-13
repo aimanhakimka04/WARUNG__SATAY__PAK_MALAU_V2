@@ -17,7 +17,7 @@ $login_url = $base_url . '/login.php';
 if ($_SERVER["HTTP_HOST"] == 'localhost') {
     $redirect_uri = $login_url;
 } else {
-    $redirect_uri = 'https://3af7-115-132-156-29.ngrok-free.app/login.php';
+    $redirect_uri = 'http://www.pakmalausatay.live/login.php';
 }
 
 // starting the google client
