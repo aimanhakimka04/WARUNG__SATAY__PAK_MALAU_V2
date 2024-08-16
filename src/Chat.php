@@ -6,7 +6,7 @@ use ChatRooms;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 
-require "../database/ChatRooms.php";
+require  __DIR__."/../database/ChatRooms.php";
 
 
 class Chat implements MessageComponentInterface
