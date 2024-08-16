@@ -121,8 +121,7 @@ foreach ($query as $key => $value) {
 // Define the list of URLs that should display the paneldelivery section
 $allowed_urls = [
     'localhost',
-    '3af7-115-132-156-29.ngrok-free.app',
-    '15f8-115-132-156-236.ngrok-free.app'
+    'www.pakmalausatay.live','206.189.84.162'
 ];
 
 // Check if the current host is in the list of allowed URLs and the page parameter is either not set or equals 'home'
