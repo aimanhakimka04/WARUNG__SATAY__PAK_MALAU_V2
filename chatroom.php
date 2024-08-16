@@ -194,7 +194,7 @@ $chat_data = $chat_object->get_all_chat_data();
             if (hostname === 'localhost') {
                 return 'ws://localhost:8080';
             } else {
-                return 'wss://www.pakmalausatay.live:8080';
+                return 'ws//206.189.84.162:8080';
             }
         }
 
