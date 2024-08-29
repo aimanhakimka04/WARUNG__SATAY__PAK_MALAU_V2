@@ -3,7 +3,12 @@
 
 use Google\Service\CloudControlsPartnerService\Console;
 
-$role = $_SESSION['user_role'];
+$role = (isset($_SESSION['user_role'])) {
+    $_SESSION['login_role'];
+} else {
+    '';
+}
+
 if ($role == 'admin') {
     $userid = $_SESSION['login_id'];
 } else if ($role == 'customer') {
