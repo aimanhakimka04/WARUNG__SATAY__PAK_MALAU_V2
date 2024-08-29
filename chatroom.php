@@ -3,12 +3,14 @@
 
 use Google\Service\CloudControlsPartnerService\Console;
 
-$role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : '';
+$role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
 
 if ($role == 'admin') {
     $userid = $_SESSION['login_id'];
 } else if ($role == 'customer') {
     $userid = $_SESSION['login_user_id'];
+}else{
+    $userid = 0;
 }
 
 require('database/ChatRooms.php');
@@ -18,13 +20,7 @@ $chat_object = new ChatRooms();
 $chat_data = $chat_object->get_all_chat_data();
 ?>
 
-<!DOCTYPE html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-</head>
 
 <div id="test" >
     <div class="child" id="chatbot">
@@ -157,12 +153,13 @@ $chat_data = $chat_object->get_all_chat_data();
 
     document.getElementById("init").addEventListener("click", showChatBot);
     var cbot = document.getElementById("chat-box");
-
+    
     var len1 = data.chatinit.title.length; // to get the length of the array
 
     function showChatBot() {
+        
         console.log(this.innerText);
-        if (this.innerText == 'CHAT NOW') {
+        if(this.innerText == 'CHAT NOW') {
             document.getElementById('test').style.display = 'block';
             document.getElementById('init').innerText = 'CLOSE CHAT';
         } else {
@@ -229,9 +226,11 @@ $chat_data = $chat_object->get_all_chat_data();
     if (findText.toLowerCase() === "customer") {
         // Show the input group if "Customer Support" is selected
         document.getElementById("input-group").style.display = "block";
+        document.getElementById("chatbot").style.height = "34rem";
     } else {
         // Hide the input group and display a message to the user
         document.getElementById("input-group").style.display = "none";
+        document.getElementById("chatbot").style.height = "30rem";
         var elm = document.createElement("p");
         elm.innerHTML = "Please click the Customer Support option.";
         elm.setAttribute("class", "msg");
@@ -429,7 +428,7 @@ $chat_data = $chat_object->get_all_chat_data();
     .child {
         box-shadow: 0 0 2px salmon;
         border-radius: 15px;
-        height: 34rem;
+        height: 30rem;
         width: 16rem;
         margin: auto;
         background: white;
@@ -614,4 +613,3 @@ $chat_data = $chat_object->get_all_chat_data();
 </style>
 
 
-</html>
