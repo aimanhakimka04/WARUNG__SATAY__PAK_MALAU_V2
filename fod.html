@@ -1,113 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Circle of Food</title>
-    <style>
-        #circle {
-            position: relative;
-            width: 400px;
-            height: 400px;
-            margin: 50px auto;
-            overflow: visible; /* Let the plate overflow the circle container */
-        }
+<div class="chat-now-button">
+    <span class="chat-text">CHAT NOW</span>
+    <span class="chat-icon">
+        <!-- This is where the icon would be, you can use an SVG or a simple CSS shape -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="30" height="30">
+            <path fill="white" d="M50 10a40 40 0 1 1-40 40 40 40 0 0 1 40-40zM35 55a5 5 0 0 0 10 0zm20 0a5 5 0 0 0 10 0zm-22 12h24a1 1 0 0 0 .9-.6 12 12 0 0 0-25.8 0 .9.9 0 0 0 .9.6z"/>
+        </svg>
+    </span>
+</div>
+<style>
+   .chat-now-button {
+    display: flex; /*flex in malay is fleksibel*/
+    align-items: center;
+    background-color: #ff6f3d; /* Button background color */
+    border-top-left-radius: 30px; /* Rounded on top-left */
+    border-bottom-left-radius: 30px; /* Rounded on bottom-left */
+    border-bottom-right-radius: 30px; /* Rounded on bottom-right */
+    border-top-right-radius: 0; /* Flat on top-right */
+    padding: 10px 20px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
 
-        #plate {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px; /* Adjust plate size */
-            height: 300px; /* Adjust plate size */
-            background: url('images/123plate.png') no-repeat center center;
-            background-size: contain;
-            z-index: 1; /* Place plate on top of the circle */
-        }
+.chat-now-button .chat-text {
+    margin-right: 10px;
+}
 
-        #kuah {
-            position: absolute;
-            top: calc(50% - 85px); /* Move the kuah image slightly up */
-            left: calc(50% - 75px); /* Center the kuah image */
-            width: 200px;
-            height: 200px;
-            background: url('images/kuah.png') no-repeat center center; 
-            background-size: contain;
-            z-index: 2; /* Place kuah on top of the circle */
-            margin-top: -20px;
-            margin-left: -20px;
-        }
+.chat-now-button .chat-icon {
+    background-color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%; /* Making the icon circular */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-        .food {
-            position: absolute;
-            width: 110px;
-            height: 50px;
-            border-radius: 50%;
-            transform-origin: center center;
-            margin-top: 20px;
-            margin-left: 30px;
-        }
-    </style>
-</head>
-<body>
-    <div id="circle">
-        <div id="plate"></div> <!-- Place the plate inside the circle container -->
-        <div id="kuah"></div> <!-- Place the kuah inside the circle container -->
-    </div>
+.chat-now-button .chat-icon svg {
+    fill: #ff6f3d; /* Icon color */
+}
 
-    <label for="foodCount">Select food quantity:</label>
-    <select id="foodCount">
-        <option value="20">20</option>
-        <option value="30">30</option>
-        
-    </select>
 
-    <label for="kuahImage">Select kuah image:</label>
-    <select id="kuahImage">
-        <option value="images/kuah.png">Kuah 1</option>
-        <option value="images/kuah2.png">Kuah 2</option>
-        <!-- Add more options here, each option corresponds to a kuah image -->
-    </select>
-
-    <script>
-        const circle = document.getElementById('circle');
-
-        function createFoodItems(count) {
-            const plate = document.getElementById('plate');
-            plate.innerHTML = ''; // Clear plate contents
-
-            const angleIncrement = (2 * Math.PI) / count; // Calculate angle increment
-
-            for (let i = 0; i < count; i++) {
-                const foodItem = document.createElement('img'); // Create a new food item by creating an img element
-                foodItem.className = 'food';
-                foodItem.src = 'images/12345test.png'; // Image path
-                const angle = i * angleIncrement; // Calculate current food angle
-                const radius = 120; // Plate radius, including distance from plate to food
-                const x = radius * Math.cos(angle); // Radius * cos(angle)
-                const y = radius * Math.sin(angle); // Radius * sin(angle)
-                foodItem.style.left = (125 + x - 55) + 'px'; // Center the food image
-                foodItem.style.top = (125 + y - 25) + 'px'; // Center the food image
-                foodItem.style.transform = `rotate(${angle + Math.PI}rad)`; // Rotate the food image, adding Math.PI to point it outward
-                plate.appendChild(foodItem); // Append the food item to the plate
-            }
-        }
-
-        // Initially create 20 food items
-        createFoodItems(20);
-
-        // Update food items when different quantity selected
-        document.getElementById('foodCount').addEventListener('change', function(e) {
-            const count = parseInt(e.target.value); // e is the event object, e.target is the select element parseint is a function that converts a string to an integer 
-            createFoodItems(count);
-        });
-
-        // Update kuah image when different option selected
-        document.getElementById('kuahImage').addEventListener('change', function(e) {
-            const kuah = document.getElementById('kuah');
-            const newImageSrc = e.target.value;
-            kuah.style.backgroundImage = `url('${newImageSrc}')`;
-        });
-    </script>
-</body>
-</html>
+</style>
