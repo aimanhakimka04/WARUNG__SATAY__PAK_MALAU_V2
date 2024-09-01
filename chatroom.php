@@ -69,7 +69,7 @@ $chat_data = $chat_object->get_all_chat_data();
             <button class="button-send" onclick="sendMessage()">Send</button>
         </div>-->
 
-
+        <script src="chatbot_userdata.php"></script>
 <script>
     //ai system start 
     //run initChat() when document is ready
@@ -79,7 +79,7 @@ $chat_data = $chat_object->get_all_chat_data();
     };
 
 
-    var data = {
+    /*var data = {
     chatinit: {
         title: ["Hello <span class='emoji'> &#128075;</span>", "Welcome to Warung Satay Pak Malau", "How can I assist you today?"],
         options: ["Order Satay <span class='emoji'> &#127844;</span>", "Track Order <span class='emoji'> &#128347;</span>", "Payment Issues <span class='emoji'> &#128179;</span>", "Customer Support <span class='emoji'> &#128100;</span>"]
@@ -148,7 +148,8 @@ $chat_data = $chat_object->get_all_chat_data();
             link: ["#", "#", "#"]
         }
     }
-}
+}*/
+
 
 
     document.getElementById("init").addEventListener("click", showChatBot);
@@ -170,27 +171,35 @@ $chat_data = $chat_object->get_all_chat_data();
     }
 
     function initChat() {
-        j = 0;
-        cbot.innerHTML = '';
-        for (var i = 0; i < len1; i++) {
-            setTimeout(handleChat, (i * 500));
-        }
-        setTimeout(function() {
-            showOptions(data.chatinit.options)
-        }, ((len1 + 1) * 500))
+    j = 0;
+    cbot.innerHTML = ''; // Clear previous chat
+    for (var i = 0; i < len1; i++) {
+        setTimeout(handleChat, i * 1000); // Add a 1-second delay between messages
     }
+    setTimeout(function() {
+        showOptions(data.chatinit.options);
+    }, ((len1 + 1) * 1000)); // Show options after the last message
+}
 
-    var j = 0;
+var j = 0;
 
-    function handleChat() {
-        console.log(j);
-        var elm = document.createElement("p");
-        elm.innerHTML = data.chatinit.title[j];
-        elm.setAttribute("class", "msg");
-        cbot.appendChild(elm);
-        j++;
-        handleScroll();
-    }
+function handleChat() {
+    console.log(j);
+    var elm = document.createElement("p");
+    elm.innerHTML = data.chatinit.title[j];
+    elm.setAttribute("class", "msg");
+
+    // Append message with a fade-in effect
+    elm.style.opacity = 0;
+    cbot.appendChild(elm);
+    setTimeout(() => {
+        elm.style.opacity = 1; // Gradually show the message
+    }, 300); // Delay before making it fully visible
+
+    j++;
+    handleScroll();
+}
+
 
     function showOptions(options) {
         for (var i = 0; i < options.length; i++) {
@@ -549,18 +558,19 @@ $chat_data = $chat_object->get_all_chat_data();
 
     /* these classes will be used in javascript file */
     .msg {
-        background: white;
-        padding: 5px 15px;
-        border-top-right-radius: 15px;
-        border-bottom-left-radius: 15px;
-        border-bottom-right-radius: 15px;
-        width: max-content;
-        font-size: 14px;
-        color: lightslategrey;
-        box-shadow: 0 0 5px rgb(226, 226, 226);
-        max-width: 65%;
-        text-align: left;
-    }
+    background: white;
+    padding: 5px 15px;
+    border-radius: 15px;
+    width: max-content;
+    font-size: 14px;
+    color: lightslategrey;
+    box-shadow: 0 0 5px rgb(226, 226, 226);
+    max-width: 65%;
+    text-align: left;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out; /* Smooth fade-in transition */
+}
+
 
     .test {
         text-align: right;
