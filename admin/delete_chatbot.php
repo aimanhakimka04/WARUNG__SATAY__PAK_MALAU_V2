@@ -23,7 +23,7 @@ if (isset($_GET['id'])) {
 }
 
 // Redirect back to the main page after deletion
-header("Location: chatbot_data.php"); // Change 'index.php' to the appropriate file name
+header("Location: index.php?page=chatbot_data"); // Change 'index.php' to the appropriate file name
 exit();
 
 $conn->close();

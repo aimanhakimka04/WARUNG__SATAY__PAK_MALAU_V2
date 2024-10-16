@@ -92,6 +92,7 @@ $category= $conn->query("SELECT * FROM category_list order by id asc ");
                     <?php if($_SESSION['login_type'] == 1): ?>
                     <li>
                         <a href="index.php?page=users"> <i class="menu-icon fa fa-laptop"></i>User </a>
+                        <a href="index.php?page=chatbot_data"> <i class="menu-icon fa fa-laptop"></i>Chatbot Data</a>
                     </li>
                     <?php endif; ?>
                     <h3 class="menu-title">Products</h3><!-- /.menu-title -->
@@ -122,6 +123,9 @@ $category= $conn->query("SELECT * FROM category_list order by id asc ");
                     </li>
                     <li>
                         <a href="index.php?page=comment_review"> <i class="menu-icon ti-email"></i>Comment Review </a>
+                    </li>
+                    <li>
+                        <a href="index.php?page=../adminchat"> <i class="menu-icon ti-email"></i>Chat </a>
                     </li>
                    
             

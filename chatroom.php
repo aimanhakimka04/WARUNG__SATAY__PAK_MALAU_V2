@@ -3,26 +3,41 @@
 
 use Google\Service\CloudControlsPartnerService\Console;
 
+include __DIR__ . '/database/ChatUser.php';
 $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
 
 if ($role == 'admin') {
     $userid = $_SESSION['login_id'];
 } else if ($role == 'customer') {
     $userid = $_SESSION['login_user_id'];
-}else{
+} else {
     $userid = 0;
 }
 
 require('database/ChatRooms.php');
 
 $chat_object = new ChatRooms();
+$user_object = new ChatUser();
 
 $chat_data = $chat_object->get_all_chat_data();
+
+//get usertoken for websocket
+$usertoken = md5(uniqid()); //generate unique token
+$user_object->setUserToken($usertoken);
+$user_object->setUserId($userid);
+$user_object->setRole($role);
+// . $userid . "_" . Date('YmdHis') . "_" . rand(1000, 9999)
+$user_token = $userid . "_" . Date('YmdHis') . "_" . rand(1000, 9999);
+
+
+
+
+$link_webSocket = "ws://localhost:8080?token=" . $user_token;
 ?>
 
 
 
-<div id="test" >
+<div id="test">
     <div class="child" id="chatbot">
         <div class="header">
             <div class="h-child">
@@ -31,7 +46,7 @@ $chat_data = $chat_object->get_all_chat_data();
                     <span class="name">Chatbot</span>
                     <br>
                     <span style="color:lawngreen">online</span>
-                    
+
                 </div>
             </div><span class="close-chat" onclick="showChatBot()">X</span>
             <div>
@@ -46,7 +61,7 @@ $chat_data = $chat_object->get_all_chat_data();
             <input type="text" id="user-input" placeholder="Type a message..." />
             <span class="button-send" onclick="sendMessage()"><img src="images/sent.png" /></bu>
         </div>
-        <div class="footer" >
+        <div class="footer">
             <span>powered by @pakmalausatay</span>
         </div>
     </div>
@@ -69,14 +84,16 @@ $chat_data = $chat_object->get_all_chat_data();
             <button class="button-send" onclick="sendMessage()">Send</button>
         </div>-->
 
-        <script src="chatbot_userdata.php"></script>
+<script src="chatbot_userdata.php"></script>
 <script>
     //ai system start 
     //run initChat() when document is ready
 
     window.onload = function() {
         initChat();
+        storeWebSocketLink();
     };
+
 
 
     /*var data = {
@@ -150,17 +167,19 @@ $chat_data = $chat_object->get_all_chat_data();
     }
 }*/
 
+    const userid = <?php echo $userid; ?>;
+    const role = "<?php echo $role; ?>";
 
 
     document.getElementById("init").addEventListener("click", showChatBot);
     var cbot = document.getElementById("chat-box");
-    
+
     var len1 = data.chatinit.title.length; // to get the length of the array
 
     function showChatBot() {
-        
+
         console.log(this.innerText);
-        if(this.innerText == 'CHAT NOW') {
+        if (this.innerText == 'CHAT NOW') {
             document.getElementById('test').style.display = 'block';
             document.getElementById('init').innerText = 'CLOSE CHAT';
         } else {
@@ -171,34 +190,34 @@ $chat_data = $chat_object->get_all_chat_data();
     }
 
     function initChat() {
-    j = 0;
-    cbot.innerHTML = ''; // Clear previous chat
-    for (var i = 0; i < len1; i++) {
-        setTimeout(handleChat, i * 1000); // Add a 1-second delay between messages
+        j = 0;
+        cbot.innerHTML = ''; // Clear previous chat
+        for (var i = 0; i < len1; i++) {
+            setTimeout(handleChat, i * 1000); // Add a 1-second delay between messages
+        }
+        setTimeout(function() {
+            showOptions(data.chatinit.options);
+        }, ((len1 + 1) * 1000)); // Show options after the last message
     }
-    setTimeout(function() {
-        showOptions(data.chatinit.options);
-    }, ((len1 + 1) * 1000)); // Show options after the last message
-}
 
-var j = 0;
+    var j = 0;
 
-function handleChat() {
-    console.log(j);
-    var elm = document.createElement("p");
-    elm.innerHTML = data.chatinit.title[j];
-    elm.setAttribute("class", "msg");
+    function handleChat() {
+        console.log(j);
+        var elm = document.createElement("p");
+        elm.innerHTML = data.chatinit.title[j];
+        elm.setAttribute("class", "msg");
 
-    // Append message with a fade-in effect
-    elm.style.opacity = 0;
-    cbot.appendChild(elm);
-    setTimeout(() => {
-        elm.style.opacity = 1; // Gradually show the message
-    }, 300); // Delay before making it fully visible
+        // Append message with a fade-in effect
+        elm.style.opacity = 0;
+        cbot.appendChild(elm);
+        setTimeout(() => {
+            elm.style.opacity = 1; // Gradually show the message
+        }, 300); // Delay before making it fully visible
 
-    j++;
-    handleScroll();
-}
+        j++;
+        handleScroll();
+    }
 
 
     function showOptions(options) {
@@ -213,42 +232,81 @@ function handleChat() {
         }
     }
 
-    function handleOpt() {
-    console.log(this);
-    var str = this.innerText;
-    var textArr = str.split(" ");
-    var findText = textArr[0];
-
-    document.querySelectorAll(".opt").forEach(el => {
-        el.remove();
-    });
-
-    var elm = document.createElement("p");
-    elm.setAttribute("class", "test");
-    var sp = '<span class="rep">' + this.innerText + '</span>';
-    elm.innerHTML = sp;
-    cbot.appendChild(elm);
-
-    console.log(findText.toLowerCase());
-    var tempObj = data[findText.toLowerCase()];
-
-    if (findText.toLowerCase() === "customer") {
-        // Show the input group if "Customer Support" is selected
-        document.getElementById("input-group").style.display = "block";
-        document.getElementById("chatbot").style.height = "34rem";
-    } else {
-        // Hide the input group and display a message to the user
-        document.getElementById("input-group").style.display = "none";
-        document.getElementById("chatbot").style.height = "30rem";
-        var elm = document.createElement("p");
-        elm.innerHTML = "Please click the Customer Support option.";
-        elm.setAttribute("class", "msg");
-        cbot.appendChild(elm);
+    function storeWebSocketLink() {
+        fetch('store_websocket.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'userid=' + encodeURIComponent(userid) + '&link_webSocket=' + encodeURIComponent(link_webSocket) + '&role=' + encodeURIComponent(role) + '&user_token=' + encodeURIComponent(user_token)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log("WebSocket link stored successfully.");
+                } else {
+                    console.error("Error storing WebSocket link:", data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
     }
+    //on open page run storeWebSocketLink() to store the websocket link
 
-    handleResults(tempObj.title, tempObj.options, tempObj.url);
-    handleScroll();
-}
+
+    function handleOpt() {
+        console.log(this); // Log the clicked element
+        var str = this.innerText;
+        var textArr = str.split(" ");
+        var findText = textArr[0].toLowerCase();
+
+        document.querySelectorAll(".opt").forEach(el => {
+            el.remove();
+        });
+
+        var elm = document.createElement("p");
+        elm.setAttribute("class", "test"); // Add a class to the element named "test"
+        var sp = '<span class="rep">' + this.innerText + '</span>';
+        elm.innerHTML = sp;
+        cbot.appendChild(elm);
+
+        console.log(findText);
+        var tempObj = data[findText];
+
+        if (findText === "customer") {
+            if (userid == 0) {
+                // Ask user to login
+                elm = document.createElement("p");
+                elm.innerHTML = "Please login to access customer support. Page will refresh in 5 seconds.";
+                cbot.appendChild(elm);
+
+                // Reload page after 5 seconds
+                setTimeout(function() {
+                    location.reload();
+                }, 5000);
+                console.log("Please login to access customer support.");
+            } else if (userid != 0) {
+                // Show the input group if "Customer Support" is selected
+                document.getElementById("input-group").style.display = "block";
+                document.getElementById("chatbot").style.height = "34rem";
+
+                // Send AJAX request to store the WebSocket link
+                storeWebSocketLink();
+            }
+        } else {
+            // Hide the input group and display a message to the user
+            document.getElementById("input-group").style.display = "none";
+            document.getElementById("chatbot").style.height = "30rem";
+            var elm = document.createElement("p");
+            elm.innerHTML = "Please click the Customer Support option.";
+            elm.setAttribute("class", "msg");
+            cbot.appendChild(elm);
+        }
+
+        handleResults(tempObj.title, tempObj.options, tempObj.url);
+        handleScroll();
+    }
 
 
     function handleDelay(title) {
@@ -315,14 +373,14 @@ function handleChat() {
     }
 
     //end of ai system
+    var link_webSocket = "<?php echo $link_webSocket; ?>";
+    var user_token = "<?php echo $user_token; ?>";
 
-    const userid = <?php echo $userid; ?>;
-    const role = "<?php echo $role; ?>";
 
     function getWebSocketURL() {
         const hostname = window.location.hostname;
         if (hostname === 'localhost') {
-            return 'ws://localhost:8080';
+            return link_webSocket;
         } else {
             return 'ws://206.189.84.162:8080';
         }
@@ -345,17 +403,39 @@ function handleChat() {
 
         var data = JSON.parse(e.data);
 
-        const messagesDiv = document.getElementById('messages');
+        const messagesDiv = document.getElementById('rep');
         const timestamp = new Date().toLocaleTimeString();
+        var sp;
+        var elm = document.createElement("p");
+
+
+
 
         if (data.userid === userid) {
-            messagesDiv.innerHTML += `<div class="message right"><div class="bubble right"><strong>You:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
-        } else {
-            messagesDiv.innerHTML += `<div class="message left"><div class="bubble left"><strong>${data.usremail}:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
-        }
+            //messagesDiv.innerHTML += `<div class="message right"><div class="bubble right"><strong>You:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
+            elm.setAttribute("class", "test"); // Add a class to the element named "test"
+            sp = '<span class="rep">' + data.msg + '</span>';
+            elm.innerHTML = sp;
 
+        } else {
+            // messagesDiv.innerHTML += `<div class="message left"><div class="bubble left"><strong>${data.usremail}:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
+            elm.innerHTML = data.msg;
+            elm.setAttribute("class", "msg");
+
+            // Append message with a fade-in effect
+            elm.style.opacity = 0;
+
+        }
+        cbot.appendChild(elm);
+        setTimeout(() => {
+            elm.style.opacity = 1; // Gradually show the message
+        }, 300); // Delay before making it fully visible
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     };
+    conn.onerror = function(e) {
+        console.error("WebSocket error observed:", e);
+    };
+
 
     document.getElementById('user-input').addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
@@ -373,13 +453,15 @@ function handleChat() {
             role: role,
             userid: userid,
             clientId: clientId,
-            msg: userInput
+            receiver_userid: 0, //0 means admin
+            msg: userInput,
+            command: 'Private'
         }
 
         conn.send(JSON.stringify(data));
 
         const messagesDiv = document.getElementById('messages');
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        //messagesDiv.scrollTop = messagesDiv.scrollHeight; //to scroll to the bottom of the chat
         document.getElementById('user-input').value = '';
     }
 </script>
@@ -394,19 +476,22 @@ function handleChat() {
         z-index: 1000;
 
     }
+
     #input-group {
-    display: none;
-}
-    .close-chat { 
+        display: none;
+    }
+
+    .close-chat {
         border: none !important;
         color: grey !important;
-        font-size: 25px !important; 
+        font-size: 25px !important;
         cursor: pointer !important;
-        right: 15px !important; 
-        top : 10px !important;
-        position: absolute !important; 
-        
+        right: 15px !important;
+        top: 10px !important;
+        position: absolute !important;
+
     }
+
     .desc p {
         color: rgb(133, 153, 168);
         margin: 0;
@@ -516,6 +601,7 @@ function handleChat() {
         font-size: 14px;
         box-shadow: 0 0 3px rgb(153, 153, 153);
     }
+
     .sent-msg {
         position: absolute;
         width: 16rem;
@@ -525,6 +611,7 @@ function handleChat() {
         font-size: 14px;
         box-shadow: 0 0 3px rgb(153, 153, 153);
     }
+
     .sent-msg input {
         width: 70%;
         padding: 10px;
@@ -533,16 +620,18 @@ function handleChat() {
         margin: 0 0.5rem;
     }
 
-    .button-send span, .button-send img {
+    .button-send span,
+    .button-send img {
         background: none;
         border: none;
         cursor: pointer;
     }
+
     .button-send img {
         width: 30px;
         height: 30px;
     }
-    
+
 
     #chat-box {
         position: relative;
@@ -558,18 +647,19 @@ function handleChat() {
 
     /* these classes will be used in javascript file */
     .msg {
-    background: white;
-    padding: 5px 15px;
-    border-radius: 15px;
-    width: max-content;
-    font-size: 14px;
-    color: lightslategrey;
-    box-shadow: 0 0 5px rgb(226, 226, 226);
-    max-width: 65%;
-    text-align: left;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out; /* Smooth fade-in transition */
-}
+        background: white;
+        padding: 5px 15px;
+        border-radius: 15px;
+        width: max-content;
+        font-size: 14px;
+        color: lightslategrey;
+        box-shadow: 0 0 5px rgb(226, 226, 226);
+        max-width: 65%;
+        text-align: left;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        /* Smooth fade-in transition */
+    }
 
 
     .test {
@@ -621,5 +711,3 @@ function handleChat() {
         color: blueviolet;
     }
 </style>
-
-

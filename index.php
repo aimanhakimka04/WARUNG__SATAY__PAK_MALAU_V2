@@ -1,4 +1,4 @@
-<?php ob_start();
+<?php ob_start();//turn on output buffering
 //include the configuration file
 $_SESSION['wallettopup'] = false;
 require_once 'config.php'; ?>

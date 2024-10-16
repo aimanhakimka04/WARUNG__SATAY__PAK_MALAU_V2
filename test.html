@@ -1,149 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fancy Chatbot</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
+<html>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h2>Chat with Us</h2>
-        </div>
-        <div class="chat-box" id="chat-box">
-            <div class="message bot-message">
-                <p>Hello! How can I assist you today?</p>
-            </div>
-        </div>
-        <div class="chat-input">
-            <input type="text" id="user-input" placeholder="Type your message here...">
-            <button id="send-btn">Send</button>
-        </div>
-    </div>
 
-    <script src="script.js"></script>
-</body>
-</html>
-<style>
-    body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f4f4;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-}
+<h2>Convert Milliseconds to Date and Time</h2>
 
-.chat-container {
-    width: 400px;
-    background-color: #fff;
-    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
+<p>Milliseconds: 1696587505372</p>
 
-.chat-header {
-    background-color: #007bff;
-    padding: 20px;
-    color: #fff;
-    text-align: center;
-}
-
-.chat-box {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.message {
-    max-width: 80%;
-    padding: 10px 15px;
-    border-radius: 20px;
-    position: relative;
-    word-wrap: break-word;
-}
-
-.bot-message {
-    background-color: #e1e1e1;
-    align-self: flex-start;
-    border-bottom-left-radius: 0;
-}
-
-.user-message {
-    background-color: #007bff;
-    color: #fff;
-    align-self: flex-end;
-    border-bottom-right-radius: 0;
-}
-
-.chat-input {
-    display: flex;
-    border-top: 1px solid #ddd;
-    padding: 15px;
-    background-color: #fafafa;
-}
-
-#user-input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 20px;
-    outline: none;
-    margin-right: 10px;
-}
-
-#send-btn {
-    padding: 10px 20px;
-    background-color: #007bff;
-    border: none;
-    border-radius: 20px;
-    color: #fff;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-#send-btn:hover {
-    background-color: #0056b3;
-}
-
-</style>
+<p id="demo"></p>
 
 <script>
-    document.getElementById('send-btn').addEventListener('click', sendMessage);
+let ms = 1696587505372;
+let date = new Date(ms); // Create a new Date object with the milliseconds
 
-function sendMessage() {
-    const inputBox = document.getElementById('user-input');
-    const messageText = inputBox.value.trim();
-    if (messageText === "") return;
-
-    // Create user message
-    const userMessage = document.createElement('div');
-    userMessage.classList.add('message', 'user-message');
-    userMessage.innerHTML = `<p>${messageText}</p>`;
-    document.getElementById('chat-box').appendChild(userMessage);
-
-    // Clear the input
-    inputBox.value = "";
-
-    // Auto-scroll to the bottom of the chat
-    const chatBox = document.getElementById('chat-box');
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    // Simulate bot response
-    setTimeout(() => {
-        const botMessage = document.createElement('div');
-        botMessage.classList.add('message', 'bot-message');
-        botMessage.innerHTML = `<p>This is a response from the bot!</p>`;
-        document.getElementById('chat-box').appendChild(botMessage);
-
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }, 1000);
-}
+document.getElementById("demo").innerHTML = date;
 </script>
+
+</body>
+</html>

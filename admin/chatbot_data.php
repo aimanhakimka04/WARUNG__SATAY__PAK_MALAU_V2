@@ -1,6 +1,8 @@
 <?php
 // Database connection
 include 'db_connect.php';
+include('header.php');
+
 
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
@@ -92,22 +94,9 @@ if (isset($_GET['id'])) {
 $result = $conn->query("SELECT * FROM chatbot_data");
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot Data Management</title>
+
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+      
         h1, h2 {
             color: #2c3e50;
             margin-bottom: 20px;
@@ -201,6 +190,8 @@ $result = $conn->query("SELECT * FROM chatbot_data");
             }
         }
     </style>
+    
+
     <script>
         function addField(section) {
             const container = document.getElementById(section + '-container');
@@ -228,9 +219,7 @@ $result = $conn->query("SELECT * FROM chatbot_data");
             container.removeChild(button.closest('.input-group'));
         }
     </script>
-</head>
-<body>
-    <h1>Chatbot Data Management</h1>
+
 
     <form method="POST" action="">
         <input type="hidden" name="id" value="<?php echo $id; ?>">
@@ -336,8 +325,7 @@ $result = $conn->query("SELECT * FROM chatbot_data");
         </tr>
         <?php } ?>
     </table>
-</body>
-</html>
+
 
 <?php
 $conn->close();
