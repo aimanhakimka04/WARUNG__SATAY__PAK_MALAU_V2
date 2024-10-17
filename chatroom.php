@@ -3,7 +3,6 @@
 
 use Google\Service\CloudControlsPartnerService\Console;
 
-include __DIR__ . '/database/ChatUser.php';
 $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
 
 if ($role == 'admin') {
@@ -14,58 +13,46 @@ if ($role == 'admin') {
     $userid = 0;
 }
 
-require('database/ChatRooms.php');
 
-$chat_object = new ChatRooms();
-$user_object = new ChatUser();
-
-$chat_data = $chat_object->get_all_chat_data();
-
-//get usertoken for websocket
-$usertoken = md5(uniqid()); //generate unique token
-$user_object->setUserToken($usertoken);
-$user_object->setUserId($userid);
-$user_object->setRole($role);
-// . $userid . "_" . Date('YmdHis') . "_" . rand(1000, 9999)
-$user_token = $userid . "_" . Date('YmdHis') . "_" . rand(1000, 9999);
-
-
-
-
-$link_webSocket = "ws://localhost:8080?token=" . $user_token;
 ?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
+    <!-- font awesome icon cdn-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
 
-<div id="test">
-    <div class="child" id="chatbot">
-        <div class="header">
-            <div class="h-child">
-                <img src="images/logo2.png" alt="avatar" class="logo-bot">
-                <div>
-                    <span class="name">Chatbot</span>
-                    <br>
-                    <span style="color:lawngreen">online</span>
-
+<body>
+    <div id="test">
+        <div class="child" id="chatbot">
+            <div class="header">
+                <div class="h-child">
+                    <img src="images/logo2.png" alt="avatar" class="logo-bot">
+                    <div>
+                        <span class="name">Chatbot</span>
+                        <br>
+                        <span style="color:lawngreen">online</span>
+                    </div>
                 </div>
-            </div><span class="close-chat" onclick="showChatBot()">X</span>
-            <div>
-                <!--<button class="refBtn"><i class="fa fa-refresh" onclick="initChat()"></i></button>-->
+
+            </div>
+
+            <div id="chat-box">
+
+            </div>
+            <div class="footer">
+                <span>powered by @pakmalausatay</span>
             </div>
         </div>
-
-        <div id="chat-box">
-
-        </div>
-        <div id="input-group" class="sent-msg">
-            <input type="text" id="user-input" placeholder="Type a message..." />
-            <span class="button-send" onclick="sendMessage()"><img src="images/sent.png" /></bu>
-        </div>
-        <div class="footer">
-            <span>powered by @pakmalausatay</span>
-        </div>
     </div>
-</div>
+</body>
+
 
 <!-- <div id="messages">
             <?php /*
@@ -87,6 +74,7 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
 <script src="chatbot_userdata.php"></script>
 <script>
     //ai system start 
+    /**/
     //run initChat() when document is ready
 
     window.onload = function() {
@@ -96,7 +84,7 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
 
 
 
-    /*var data = {
+    /* var data = {
     chatinit: {
         title: ["Hello <span class='emoji'> &#128075;</span>", "Welcome to Warung Satay Pak Malau", "How can I assist you today?"],
         options: ["Order Satay <span class='emoji'> &#127844;</span>", "Track Order <span class='emoji'> &#128347;</span>", "Payment Issues <span class='emoji'> &#128179;</span>", "Customer Support <span class='emoji'> &#128100;</span>"]
@@ -170,14 +158,12 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
     const userid = <?php echo $userid; ?>;
     const role = "<?php echo $role; ?>";
 
-
     document.getElementById("init").addEventListener("click", showChatBot);
     var cbot = document.getElementById("chat-box");
 
     var len1 = data.chatinit.title.length; // to get the length of the array
 
     function showChatBot() {
-
         console.log(this.innerText);
         if (this.innerText == 'CHAT NOW') {
             document.getElementById('test').style.display = 'block';
@@ -185,40 +171,30 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
         } else {
             document.getElementById('test').style.display = 'none';
             document.getElementById('init').innerText = 'CHAT NOW';
-            // location.reload();
         }
     }
 
     function initChat() {
         j = 0;
-        cbot.innerHTML = ''; // Clear previous chat
+        cbot.innerHTML = '';
         for (var i = 0; i < len1; i++) {
-            setTimeout(handleChat, i * 1000); // Add a 1-second delay between messages
+            setTimeout(handleChat, (i * 500));
         }
         setTimeout(function() {
-            showOptions(data.chatinit.options);
-        }, ((len1 + 1) * 1000)); // Show options after the last message
+            showOptions(data.chatinit.options)
+        }, ((len1 + 1) * 500))
     }
 
     var j = 0;
 
     function handleChat() {
-        console.log(j);
         var elm = document.createElement("p");
         elm.innerHTML = data.chatinit.title[j];
         elm.setAttribute("class", "msg");
-
-        // Append message with a fade-in effect
-        elm.style.opacity = 0;
         cbot.appendChild(elm);
-        setTimeout(() => {
-            elm.style.opacity = 1; // Gradually show the message
-        }, 300); // Delay before making it fully visible
-
         j++;
         handleScroll();
     }
-
 
     function showOptions(options) {
         for (var i = 0; i < options.length; i++) {
@@ -230,117 +206,61 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
             cbot.appendChild(opt);
             handleScroll();
         }
+        // Add "Main Menu" option
+        var mainMenuOpt = document.createElement("span");
+        mainMenuOpt.innerHTML = '<div>Main Menu</div>';
+        mainMenuOpt.setAttribute("class", "opt");
+        mainMenuOpt.addEventListener("click", initChat);
+        cbot.appendChild(mainMenuOpt);
+        handleScroll();
     }
-
-    function storeWebSocketLink() {
-        fetch('store_websocket.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'userid=' + encodeURIComponent(userid) + '&link_webSocket=' + encodeURIComponent(link_webSocket) + '&role=' + encodeURIComponent(role) + '&user_token=' + encodeURIComponent(user_token)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    console.log("WebSocket link stored successfully.");
-                } else {
-                    console.error("Error storing WebSocket link:", data.message);
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-            });
-    }
-    //on open page run storeWebSocketLink() to store the websocket link
-
 
     function handleOpt() {
-        console.log(this); // Log the clicked element
         var str = this.innerText;
-        var textArr = str.split(" ");
-        var findText = textArr[0].toLowerCase();
+        var findText = str.split(" ")[0].toLowerCase();
 
         document.querySelectorAll(".opt").forEach(el => {
             el.remove();
         });
 
         var elm = document.createElement("p");
-        elm.setAttribute("class", "test"); // Add a class to the element named "test"
+        elm.setAttribute("class", "test");
         var sp = '<span class="rep">' + this.innerText + '</span>';
         elm.innerHTML = sp;
         cbot.appendChild(elm);
 
-        console.log(findText);
-        var tempObj = data[findText];
-
         if (findText === "customer") {
-            if (userid == 0) {
-                // Ask user to login
-                elm = document.createElement("p");
-                elm.innerHTML = "Please login to access customer support. Page will refresh in 5 seconds.";
-                cbot.appendChild(elm);
-
-                // Reload page after 5 seconds
-                setTimeout(function() {
-                    location.reload();
-                }, 5000);
-                console.log("Please login to access customer support.");
-            } else if (userid != 0) {
-                // Show the input group if "Customer Support" is selected
-                document.getElementById("input-group").style.display = "block";
-                document.getElementById("chatbot").style.height = "34rem";
-
-                // Send AJAX request to store the WebSocket link
-                storeWebSocketLink();
-            }
+            // Special case for "Customer Support"
+            var supportElm = document.createElement("p");
+            supportElm.innerHTML = "<p>👋 <strong>Need Assistance?</strong><br>Click on the link provided below to connect with our customer service team for help!</p><p>🔗 <a href='http://localhost/' style='color: blue; text-decoration: underline;'>Connect with Customer Service</a></p>";
+            supportElm.setAttribute("class", "msg");
+            cbot.appendChild(supportElm);
+            var mainMenuOpt = document.createElement("span");
+            mainMenuOpt.innerHTML = '<div>Main Menu</div>';
+            mainMenuOpt.setAttribute("class", "opt");
+            mainMenuOpt.addEventListener("click", initChat);
+            cbot.appendChild(mainMenuOpt);
         } else {
-            // Hide the input group and display a message to the user
-            document.getElementById("input-group").style.display = "none";
-            document.getElementById("chatbot").style.height = "30rem";
-            var elm = document.createElement("p");
-            elm.innerHTML = "Please click the Customer Support option.";
-            elm.setAttribute("class", "msg");
-            cbot.appendChild(elm);
+            var tempObj = data[findText];
+            handleResults(tempObj.title, tempObj.options, tempObj.url);
         }
-
-        handleResults(tempObj.title, tempObj.options, tempObj.url);
-        handleScroll();
     }
-
-
-    function handleDelay(title) {
-        var elm = document.createElement("p");
-        elm.innerHTML = title;
-        elm.setAttribute("class", "msg");
-        cbot.appendChild(elm);
-    }
-
 
     function handleResults(title, options, url) {
         for (let i = 0; i < title.length; i++) {
             setTimeout(function() {
                 handleDelay(title[i]);
             }, i * 500)
-
         }
 
-        const isObjectEmpty = (url) => {
-            return JSON.stringify(url) === "{}";
-        }
-
-        if (isObjectEmpty(url) == true) {
-            console.log("having more options");
-            setTimeout(function() {
-                showOptions(options);
-            }, title.length * 500)
-
-        } else {
-            console.log("end result");
+        if (url.more) {
             setTimeout(function() {
                 handleOptions(options, url);
-            }, title.length * 500)
-
+            }, title.length * 500);
+        } else {
+            setTimeout(function() {
+                showOptions(options);
+            }, title.length * 500);
         }
     }
 
@@ -352,19 +272,14 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
             opt.setAttribute("class", "opt");
             cbot.appendChild(opt);
         }
-        var opt = document.createElement("span");
-        var inp = '<a class="m-link" href="' + url.more + '">' + 'See more</a>';
-
-        const isObjectEmpty = (url) => {
-            return JSON.stringify(url) === "{}";
-        }
-
-        console.log(isObjectEmpty(url));
-        console.log(url);
-        opt.innerHTML = inp;
-        opt.setAttribute("class", "opt link");
-        cbot.appendChild(opt);
         handleScroll();
+    }
+
+    function handleDelay(title) {
+        var elm = document.createElement("p");
+        elm.innerHTML = title;
+        elm.setAttribute("class", "msg");
+        cbot.appendChild(elm);
     }
 
     function handleScroll() {
@@ -372,98 +287,10 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
         elem.scrollTop = elem.scrollHeight;
     }
 
-    //end of ai system
-    var link_webSocket = "<?php echo $link_webSocket; ?>";
-    var user_token = "<?php echo $user_token; ?>";
-
-
-    function getWebSocketURL() {
-        const hostname = window.location.hostname;
-        if (hostname === 'localhost') {
-            return link_webSocket;
-        } else {
-            return 'ws://206.189.84.162:8080';
-        }
-    }
-
-    // Generate a random client ID
-    function generateClientId() {
-        return 'client-' + Math.random().toString(36).substr(2, 9);
-    }
-
-    const clientId = generateClientId();
-    var conn = new WebSocket(getWebSocketURL());
-
-    conn.onopen = function(e) {
-        console.log("Connection established!");
-    };
-
-    conn.onmessage = function(e) {
-        console.log(e.data);
-
-        var data = JSON.parse(e.data);
-
-        const messagesDiv = document.getElementById('rep');
-        const timestamp = new Date().toLocaleTimeString();
-        var sp;
-        var elm = document.createElement("p");
 
 
 
-
-        if (data.userid === userid) {
-            //messagesDiv.innerHTML += `<div class="message right"><div class="bubble right"><strong>You:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
-            elm.setAttribute("class", "test"); // Add a class to the element named "test"
-            sp = '<span class="rep">' + data.msg + '</span>';
-            elm.innerHTML = sp;
-
-        } else {
-            // messagesDiv.innerHTML += `<div class="message left"><div class="bubble left"><strong>${data.usremail}:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>`;
-            elm.innerHTML = data.msg;
-            elm.setAttribute("class", "msg");
-
-            // Append message with a fade-in effect
-            elm.style.opacity = 0;
-
-        }
-        cbot.appendChild(elm);
-        setTimeout(() => {
-            elm.style.opacity = 1; // Gradually show the message
-        }, 300); // Delay before making it fully visible
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    };
-    conn.onerror = function(e) {
-        console.error("WebSocket error observed:", e);
-    };
-
-
-    document.getElementById('user-input').addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-            sendMessage();
-        }
-    });
-
-    function sendMessage() {
-        const userInput = document.getElementById('user-input').value;
-        const timestamp = new Date().toLocaleTimeString();
-
-        if (userInput.trim() === '') return;
-
-        var data = {
-            role: role,
-            userid: userid,
-            clientId: clientId,
-            receiver_userid: 0, //0 means admin
-            msg: userInput,
-            command: 'Private'
-        }
-
-        conn.send(JSON.stringify(data));
-
-        const messagesDiv = document.getElementById('messages');
-        //messagesDiv.scrollTop = messagesDiv.scrollHeight; //to scroll to the bottom of the chat
-        document.getElementById('user-input').value = '';
-    }
+    //on open page run storeWebSocketLink() to store the websocket link
 </script>
 
 <style>
@@ -490,6 +317,18 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
         top: 10px !important;
         position: absolute !important;
 
+    }
+
+    .refBtn {
+        position: absolute;
+        bottom: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        border-radius: 50%;
+        color: indianred;
+        font-size: 18px;
+        cursor: pointer;
     }
 
     .desc p {
@@ -523,7 +362,7 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
         box-shadow: 0 0 2px salmon;
         border-radius: 15px;
         height: 30rem;
-        width: 16rem;
+        width: 20rem;
         margin: auto;
         background: white;
     }
@@ -549,7 +388,7 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
         align-items: center;
         border-bottom: 1px solid whitesmoke;
         background: white;
-        width: 16rem;
+        width: 20rem;
         padding: 5px 0;
         border-top-right-radius: 15px;
         border-top-left-radius: 15px;
@@ -591,7 +430,7 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
     .footer {
         position: absolute;
         bottom: 0;
-        width: 16rem;
+        width: 20rem;
         background: white;
         border-bottom-left-radius: 15px;
         border-bottom-right-radius: 15px;
@@ -604,7 +443,7 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
 
     .sent-msg {
         position: absolute;
-        width: 16rem;
+        width: 20rem;
         background: white;
         padding: 15px 0;
         text-align: center;
@@ -656,7 +495,6 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
         box-shadow: 0 0 5px rgb(226, 226, 226);
         max-width: 65%;
         text-align: left;
-        opacity: 0;
         transition: opacity 0.3s ease-in-out;
         /* Smooth fade-in transition */
     }

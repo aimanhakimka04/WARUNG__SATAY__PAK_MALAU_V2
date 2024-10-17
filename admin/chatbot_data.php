@@ -3,19 +3,22 @@
 include 'db_connect.php';
 include('header.php');
 
-
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
 // Handle form submission for adding or updating data
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['section'], $_POST['title'], $_POST['options']) && !empty($_POST['title']) && !empty($_POST['options'])) {
+    if (isset($_POST['section'], $_POST['title']) && !empty($_POST['title'])) {
         $section = $_POST['section'];
         $title = json_encode($_POST['title']); // Convert title array to JSON
-        $options = json_encode($_POST['options']); // Convert options array to JSON
-        $urls = isset($_POST['urls']) ? json_encode($_POST['urls']) : json_encode([]); // Optional URL handling
-        
+
+        // Handle options: If options are not provided, default to an empty array
+        $options = isset($_POST['options']) ? json_encode($_POST['options']) : json_encode([]); 
+
+        // Handle URLs: If URLs are not provided, default to an empty array
+        $urls = isset($_POST['urls']) ? json_encode($_POST['urls']) : json_encode([]); 
+
         // Check if section already exists
         $stmt = $conn->prepare("SELECT id FROM chatbot_data WHERE section = ?");
         $stmt->bind_param("s", $section);
@@ -67,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
     } else {
-        echo "<script>alert('Section, Titles, and Options are required.');</script>";
+        echo "<script>alert('Section and Titles are required.');</script>";
     }
 }
 
@@ -91,61 +94,60 @@ if (isset($_GET['id'])) {
     }
 }
 
-$result = $conn->query("SELECT * FROM chatbot_data");
+$data = $conn->query("SELECT * FROM chatbot_data");
 ?>
 
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Chatbot Data</title>
     <style>
-      
-        h1, h2 {
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+        h1 {
+            text-align: center;
             color: #2c3e50;
             margin-bottom: 20px;
         }
         form {
-            background-color: #fff;
+            background-color: #ffffff;
             padding: 20px;
             border-radius: 8px;
+            margin-bottom: 30px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            width: 80%;
-            max-width: 800px;
-            margin-bottom: 40px;
         }
         label {
-            font-size: 16px;
-            color: #34495e;
-            margin-bottom: 10px;
+            font-weight: bold;
+            margin-bottom: 5px;
             display: block;
         }
         input[type="text"], textarea {
             width: 100%;
             padding: 10px;
-            margin: 5px 0 20px;
-            border: 1px solid #ddd;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
             border-radius: 5px;
-            font-size: 14px;
-            box-sizing: border-box;
-            outline: none;
-        }
-        textarea {
-            height: 70px;
-            resize: none;
         }
         button {
             background-color: #3498db;
             color: white;
-            padding: 10px 15px;
+            padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 14px;
+            margin-top: 10px;
         }
         button:hover {
             background-color: #2980b9;
         }
         .input-group {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 10px;
         }
         .input-group button {
@@ -156,177 +158,127 @@ $result = $conn->query("SELECT * FROM chatbot_data");
             background-color: #c0392b;
         }
         table {
-            width: 90%;
-            margin-bottom: 40px;
-            background-color: white;
+            width: 100%;
             border-collapse: collapse;
+            margin-top: 30px;
+            background-color: #fff;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        table, th, td {
-            border: 1px solid #ddd;
         }
         th, td {
             padding: 12px;
+            border: 1px solid #ddd;
             text-align: left;
         }
         th {
             background-color: #2c3e50;
             color: white;
         }
-        td {
-            background-color: #ecf0f1;
-        }
-        td a {
-            color: #3498db;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        td a:hover {
-            text-decoration: underline;
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
         }
         @media (max-width: 768px) {
-            form, table {
-                width: 95%;
+            .input-group {
+                flex-direction: column;
+            }
+            .form-actions {
+                flex-direction: column;
+                gap: 10px;
             }
         }
     </style>
-    
+</head>
+<body>
+    <div class="container">
+        <h1>Manage Chatbot Data</h1>
+        <form method="POST">
+            <input type="hidden" name="id" value="<?php echo $id; ?>">
+            <label>Section:</label>
+            <input type="text" name="section" value="<?php echo $section; ?>" required>
+
+            <label>Titles:</label>
+            <div id="title-container">
+                <?php foreach ($titles as $title): ?>
+                    <div class="input-group">
+                        <textarea name="title[]" required><?php echo $title; ?></textarea>
+                        <button type="button" onclick="removeField(this)">Remove</button>
+                    </div>
+                <?php endforeach; ?>
+                <button type="button" onclick="addField('title')">Add More Title</button>
+            </div>
+
+            <label>Options:</label>
+            <div id="options-container">
+                <?php foreach ($options as $option): ?>
+                    <div class="input-group">
+                        <textarea name="options[]"><?php echo $option; ?></textarea>
+                        <button type="button" onclick="removeField(this)">Remove</button>
+                    </div>
+                <?php endforeach; ?>
+                <button type="button" onclick="addField('options')">Add More Option</button>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" name="save">Save</button>
+                <button type="submit" name="clear">Clear</button>
+            </div>
+        </form>
+
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Section</th>
+                <th>Title</th>
+                <th>Options</th>
+                <th>Actions</th>
+            </tr>
+            <?php if ($data->num_rows > 0): ?>
+                <?php while ($row = $data->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo $row['id']; ?></td>
+                        <td><?php echo $row['section']; ?></td>
+                        <td><?php echo implode('<br>', json_decode($row['title'], true)); ?></td>
+                        <td><?php echo implode('<br>', json_decode($row['options'], true)); ?></td>
+                        <td>
+                            <a href="?page=chatbot_data&id=<?php echo $row['id']; ?>">Edit</a> |
+                            <a href="delete_chatbot.php?id=<?php echo $row['id']; ?>" onclick="return confirm('Are you sure?')">Delete</a>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="5" style="text-align: center;">No data available.</td>
+                </tr>
+            <?php endif; ?>
+        </table>
+    </div>
 
     <script>
         function addField(section) {
             const container = document.getElementById(section + '-container');
             const inputGroup = document.createElement('div');
-            inputGroup.className = 'input-group';
+            inputGroup.classList.add('input-group');
 
             const textarea = document.createElement('textarea');
             textarea.name = section + '[]';
-            textarea.required = true;
+            textarea.required = section === 'title'; // Required only for title
 
             const removeButton = document.createElement('button');
             removeButton.type = 'button';
-            removeButton.innerText = 'Remove';
+            removeButton.textContent = 'Remove';
             removeButton.onclick = function () {
-                container.removeChild(inputGroup);
+                removeField(removeButton);
             };
 
             inputGroup.appendChild(textarea);
             inputGroup.appendChild(removeButton);
-            container.appendChild(inputGroup);
+            container.insertBefore(inputGroup, container.lastElementChild);
         }
 
         function removeField(button) {
-            const container = button.closest('.input-group').parentElement;
-            container.removeChild(button.closest('.input-group'));
+            const inputGroup = button.parentNode;
+            inputGroup.remove();
         }
     </script>
-
-
-    <form method="POST" action="">
-        <input type="hidden" name="id" value="<?php echo $id; ?>">
-
-        <label for="section">Section:</label>
-        <input type="text" name="section" value="<?php echo htmlspecialchars($section); ?>" required>
-
-        <label for="title">Titles:</label>
-        <div id="title-container">
-            <?php if (count($titles) > 0): ?>
-                <?php foreach ($titles as $title): ?>
-                    <div class="input-group">
-                        <textarea name="title[]" required><?php echo htmlspecialchars($title); ?></textarea>
-                        <button type="button" onclick="removeField(this)">Remove</button>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="input-group">
-                    <textarea name="title[]" required></textarea>
-                </div>
-            <?php endif; ?>
-            <button type="button" onclick="addField('title')">Add More Title</button>
-        </div>
-
-        <label for="options">Options:</label>
-        <div id="options-container">
-            <?php if (count($options) > 0): ?>
-                <?php foreach ($options as $option): ?>
-                    <div class="input-group">
-                        <textarea name="options[]" required><?php echo htmlspecialchars($option); ?></textarea>
-                        <button type="button" onclick="removeField(this)">Remove</button>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="input-group">
-                    <textarea name="options[]" required></textarea>
-                </div>
-            <?php endif; ?>
-            <button type="button" onclick="addField('options')">Add More Option</button>
-        </div>
-
-        <label for="urls">URLs (Optional):</label>
-        <div id="urls-container">
-            <?php if (count($urls) > 0): ?>
-                <?php foreach ($urls as $url): ?>
-                    <div class="input-group">
-                        <textarea name="urls[]"><?php echo htmlspecialchars($url); ?></textarea>
-                        <button type="button" onclick="removeField(this)">Remove</button>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <div class="input-group">
-                    <textarea name="urls[]"></textarea>
-                </div>
-            <?php endif; ?>
-            <button type="button" onclick="addField('urls')">Add More URL</button>
-        </div>
-
-        <button type="submit">Save</button>
-    </form>
-
-    <h2>Existing Data</h2>
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Section</th>
-            <th>Title</th>
-            <th>Options</th>
-            <th>URLs</th>
-            <th>Actions</th>
-        </tr>
-        <?php while ($row = $result->fetch_assoc()) {
-            $titles = json_decode($row['title'], true);
-            $options = json_decode($row['options'], true);
-            $urls = json_decode($row['urls'], true);
-        ?>
-        <tr>
-            <td><?php echo $row['id']; ?></td>
-            <td><?php echo htmlspecialchars($row['section']); ?></td>
-            <td>
-                <?php foreach ($titles as $title) {
-                    echo htmlspecialchars($title) . "<br>";
-                } ?>
-            </td>
-            <td>
-                <?php foreach ($options as $option) {
-                    echo htmlspecialchars($option) . "<br>";
-                } ?>
-            </td>
-            <td>
-                <?php if (!empty($urls)) {
-                    foreach ($urls as $url) {
-                        echo htmlspecialchars($url) . "<br>";
-                    }
-                } else {
-                    echo "No URLs provided.";
-                } ?>
-            </td>
-            <td>
-                <a href="?id=<?php echo $row['id']; ?>">Edit</a> | 
-                <a href="delete_chatbot.php?id=<?php echo $row['id']; ?>" onclick="return confirm('Are you sure you want to delete this record?')">Delete</a>
-            </td>
-        </tr>
-        <?php } ?>
-    </table>
-
-
-<?php
-$conn->close();
-?>
+</body>
+</html>

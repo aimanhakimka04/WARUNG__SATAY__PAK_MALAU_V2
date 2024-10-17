@@ -267,6 +267,18 @@ function update_connection_id(){
         $stmt->close();
         return $users;
     }
-
+    public function showsadmininquries()
+    {
+        $query = "SELECT * FROM chatsecurity where role = 1 and status = 0 OR status = 1";
+        $stmt = $this->connect->prepare($query);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $users = array();
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+        $stmt->close();
+        return $users;
+    }
   
 }

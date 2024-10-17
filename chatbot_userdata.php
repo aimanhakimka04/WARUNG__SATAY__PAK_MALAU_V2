@@ -14,15 +14,22 @@ $result = $conn->query($sql);
 $data = [];
 
 if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        $data[$row['section']] = [
-            "title" => json_decode($row['title'], true),  // Decode JSON string to array
-            "options" => json_decode($row['options'], true),  // Decode JSON string to array
-            "url" => [
-                "more" => "#",  // Placeholder, adjust if necessary
-                "link" => json_decode($row['urls'], true)  // Decode JSON string to array
-            ]
-        ];
+    while ($row = $result->fetch_assoc()) {
+        // Handle 'chatinit' section differently
+        if ($row['section'] === 'chatinit') {
+            $data[$row['section']] = [
+                "title" => json_decode($row['title'], true),  // Decode JSON string to array
+                "options" => json_decode($row['options'], true)  // No URL field for 'chatinit'
+            ];
+        } else {
+            // For other sections, include the 'url' field
+            $data[$row['section']] = [
+                "title" => json_decode($row['title'], true),  // Decode JSON string to array
+                "options" => json_decode($row['options'], true),  // Decode JSON string to array
+                "url" => [
+                ]
+            ];
+        }
     }
 }
 
