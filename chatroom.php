@@ -30,7 +30,7 @@ if ($role == 'admin') {
 
 <body>
     <div id="test">
-        <div class="child" id="chatbot">
+        <div class="child" id="chatbot" style="height:34rem;">
             <div class="header">
                 <div class="h-child">
                     <img src="images/logo2.png" alt="avatar" class="logo-bot">
@@ -48,6 +48,11 @@ if ($role == 'admin') {
             <div id="chat-box">
 
             </div>
+            <div id="input-group" class="sent-msg">
+            <input type="text" id="user-input" placeholder="Type a message..." />
+            <span class="button-send" onclick="sendMessage()"><img src="images/sent.png" /></bu>
+        </div>
+
             <div class="footer">
                 <span>powered by @pakmalausatay</span>
             </div>
@@ -74,6 +79,7 @@ if ($role == 'admin') {
         </div>-->
 
 <script src="chatbot_userdata.php"></script>
+<script src="keywordadd.php"></script>
 <script>
     //ai system start 
     /**/
@@ -81,7 +87,7 @@ if ($role == 'admin') {
 
     window.onload = function() {
         initChat();
-        storeWebSocketLink();
+        
     };
 
 
@@ -288,11 +294,51 @@ if ($role == 'admin') {
         var elem = document.getElementById('chat-box');
         elem.scrollTop = elem.scrollHeight;
     }
+    document.getElementById('user-input').addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    function sendMessage() {
+        const userInput = document.getElementById('user-input').value.trim();
+        if (userInput) {
+            processInput(userInput);  // Process the input
+            document.getElementById('user-input').value = '';  // Clear input field
+        }
+    }
+
+    function processInput(userInput) {
+        userInput = userInput.toLowerCase();
+
+        
+
+        for (let key in keywords) {
+            if (userInput.includes(keywords[key])) {
+                handleResults(data[keywords[key]].title, data[keywords[key]].options, data[keywords[key]].url);
+                return;
+            }
+        }
+
+        handleNotRecognized();
+    }
+
+    function handleNotRecognized() {
+        const defaultMsg = document.createElement("p");
+        defaultMsg.innerHTML = "Sorry, we are not clear with the message you asked. Please resend the new question or continue with customer service.";
+        defaultMsg.setAttribute("class", "msg");
+        cbot.appendChild(defaultMsg);
+        handleScroll();
+    }
+
+    //enter key to send message
+    
 
 
 
 
-    //on open page run storeWebSocketLink() to store the websocket link
+
+   
 </script>
 
 <style>
@@ -306,9 +352,7 @@ if ($role == 'admin') {
 
     }
 
-    #input-group {
-        display: none;
-    }
+  
 
     .close-chat {
         border: none !important;
