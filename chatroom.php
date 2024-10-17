@@ -39,6 +39,8 @@ if ($role == 'admin') {
                         <br>
                         <span style="color:lawngreen">online</span>
                     </div>
+                    <span class="close-chat" onclick="showChatBot()">X</span>
+
                 </div>
 
             </div>
