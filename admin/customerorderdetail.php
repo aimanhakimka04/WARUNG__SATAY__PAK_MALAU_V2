@@ -47,7 +47,7 @@
                 <td><?php echo $row['name'] ?></td>
             </tr>
             <tr>
-                <th><i class="fas fa-map-marker-alt"></i> Customer Address</th>
+                <th><i class="fas fa-map-marker-alt"></i> Customer Coordinates</th>
                 <td><?php echo $row['address'] ?></td>
             </tr>
             <tr>
