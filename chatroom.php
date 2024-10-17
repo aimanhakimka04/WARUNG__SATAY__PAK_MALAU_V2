@@ -1,553 +1,292 @@
 <?php
+// Database connection
+include 'db_connect.php';
+include('header.php');
 
-
-use Google\Service\CloudControlsPartnerService\Console;
-
-$role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
-
-if ($role == 'admin') {
-    $userid = $_SESSION['login_id'];
-} else if ($role == 'customer') {
-    $userid = $_SESSION['login_user_id'];
-} else {
-    $userid = 0;
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
 
+// Handle form submission for adding or updating data
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save'])) {
+    if (isset($_POST['section'], $_POST['title']) && !empty($_POST['title'])) {
+        $section = $_POST['section'];
+        $title = json_encode($_POST['title']); // Convert title array to JSON
 
+        // Handle options: If options are not provided, default to an empty array
+        $options = isset($_POST['options']) ? json_encode($_POST['options']) : json_encode([]); 
+
+        // Handle URLs: If URLs are not provided, default to an empty array
+        $urls = isset($_POST['urls']) ? json_encode($_POST['urls']) : json_encode([]); 
+
+        // Check if section already exists
+        $stmt = $conn->prepare("SELECT id FROM chatbot_data WHERE section = ?");
+        $stmt->bind_param("s", $section);
+        $stmt->execute();
+        $stmt->store_result();
+        
+        // Fetch the existing section ID if it exists
+        $existingId = null;
+        if ($stmt->num_rows > 0) {
+            $stmt->bind_result($existingId);
+            $stmt->fetch();
+        }
+
+        $stmt->close();
+
+        if (!empty($_POST['id'])) {
+            // Check if it's the same record (for update scenario)
+            if ($existingId && $existingId != $_POST['id']) {
+                echo "<script>alert('Error: Section already exists in the database.');</script>";
+            } else {
+                // Update existing record
+                $id = $_POST['id'];
+                $stmt = $conn->prepare("UPDATE chatbot_data SET section=?, title=?, options=?, urls=? WHERE id=?");
+                $stmt->bind_param("ssssi", $section, $title, $options, $urls, $id);
+                
+                if ($stmt->execute()) {
+                    echo "<script>alert('Record updated successfully.');</script>";
+                } else {
+                    echo "<script>alert('Error: " . $stmt->error . "');</script>";
+                }
+
+                $stmt->close();
+            }
+        } else {
+            // Insert new record only if section does not already exist
+            if ($existingId) {
+                echo "<script>alert('Error: Section already exists in the database.');</script>";
+            } else {
+                $stmt = $conn->prepare("INSERT INTO chatbot_data (section, title, options, urls) VALUES (?, ?, ?, ?)");
+                $stmt->bind_param("ssss", $section, $title, $options, $urls);
+                
+                if ($stmt->execute()) {
+                    echo "<script>alert('Record saved successfully.');</script>";
+                } else {
+                    echo "<script>alert('Error: " . $stmt->error . "');</script>";
+                }
+
+                $stmt->close();
+            }
+        }
+    } else {
+        echo "<script>alert('Section and Titles are required.');</script>";
+    }
+}
+
+// Fetch data to display or edit
+$id = '';
+$section = '';
+$titles = [];
+$options = [];
+$urls = [];
+
+if (isset($_GET['id'])) {
+    $id = $_GET['id'];
+    $result = $conn->query("SELECT * FROM chatbot_data WHERE id=$id");
+
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $section = $row['section'];
+        $titles = json_decode($row['title'], true);
+        $options = json_decode($row['options'], true);
+        $urls = json_decode($row['urls'], true);
+    }
+}
+
+$data = $conn->query("SELECT * FROM chatbot_data");
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
-    <!-- font awesome icon cdn-->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>Manage Chatbot Data</title>
+    <style>
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        form {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .input-group {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .input-group button {
+            margin-left: 10px;
+            background-color: #e74c3c;
+        }
+        .input-group button:hover {
+            background-color: #c0392b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #2c3e50;
+            color: white;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+        }
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+            .form-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
 </head>
-
 <body>
-    <div id="test">
-        <div class="child" id="chatbot">
-            <div class="header">
-                <div class="h-child">
-                    <img src="images/logo2.png" alt="avatar" class="logo-bot">
-                    <div>
-                        <span class="name">Chatbot</span>
-                        <br>
-                        <span style="color:lawngreen">online</span>
+    <div class="container">
+        <h1>Manage Chatbot Data</h1>
+        <form method="POST" id="chatbot-form">
+            <input type="hidden" name="id" value="<?php echo $id; ?>">
+            <label>Section:</label>
+            <input type="text" name="section" value="<?php echo $section; ?>" required>
+
+            <label>Titles:</label>
+            <div id="title-container">
+                <?php foreach ($titles as $title): ?>
+                    <div class="input-group">
+                        <textarea name="title[]" required><?php echo $title; ?></textarea>
+                        <button type="button" onclick="removeField(this)">Remove</button>
                     </div>
-                    <span class="close-chat" onclick="showChatBot()">X</span>
-
-                </div>
-
+                <?php endforeach; ?>
+                <button type="button" onclick="addField('title')">Add More Title</button>
             </div>
 
-            <div id="chat-box">
+            <label>Options:</label>
+            <div id="options-container">
+                <?php foreach ($options as $option): ?>
+                    <div class="input-group">
+                        <textarea name="options[]"><?php echo $option; ?></textarea>
+                        <button type="button" onclick="removeField(this)">Remove</button>
+                    </div>
+                <?php endforeach; ?>
+                <button type="button" onclick="addField('options')">Add More Option</button>
+            </div>
 
+            <div class="form-actions">
+                <button type="submit" name="save">Save</button>
+                <button type="button" onclick="clearForm()">Clear</button>
             </div>
-            <div class="footer">
-                <span>powered by @pakmalausatay</span>
-            </div>
-        </div>
+        </form>
+
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Section</th>
+                <th>Title</th>
+                <th>Options</th>
+                <th>Actions</th>
+            </tr>
+            <?php if ($data->num_rows > 0): ?>
+                <?php while ($row = $data->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo $row['id']; ?></td>
+                        <td><?php echo $row['section']; ?></td>
+                        <td><?php echo implode('<br>', json_decode($row['title'], true)); ?></td>
+                        <td><?php echo implode('<br>', json_decode($row['options'], true)); ?></td>
+                        <td>
+                            <a href="?page=chatbot_data&id=<?php echo $row['id']; ?>">Edit</a> |
+                            <a href="delete_chatbot.php?id=<?php echo $row['id']; ?>" onclick="return confirm('Are you sure?')">Delete</a>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="5" style="text-align: center;">No data available.</td>
+                </tr>
+            <?php endif; ?>
+        </table>
     </div>
+
+    <script>
+        function addField(section) {
+            const container = document.getElementById(section + '-container');
+            const inputGroup = document.createElement('div');
+            inputGroup.classList.add('input-group');
+
+            const textarea = document.createElement('textarea');
+            textarea.name = section + '[]';
+            textarea.required = section === 'title'; // Required only for title
+
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.textContent = 'Remove';
+            removeButton.onclick = function () {
+                removeField(removeButton);
+            };
+
+            inputGroup.appendChild(textarea);
+            inputGroup.appendChild(removeButton);
+            container.insertBefore(inputGroup, container.lastElementChild);
+        }
+
+        function removeField(button) {
+            const inputGroup = button.parentNode;
+            inputGroup.remove();
+        }
+
+        function clearForm() {
+            document.getElementById('chatbot-form').reset();
+
+            // Clear dynamic fields manually (titles and options)
+            document.getElementById('title-container').innerHTML = '<button type="button" onclick="addField(\'title\')">Add More Title</button>';
+            document.getElementById('options-container').innerHTML = '<button type="button" onclick="addField(\'options\')">Add More Option</button>';
+        }
+    </script>
 </body>
-
-
-<!-- <div id="messages">
-            <?php /*
-            foreach ($chat_data as $row) {
-                if ($userid == $row['userid'] && $role == $row['role_user']) {
-                    echo '<div class="message right"><div class="bubble right"><strong>You:</strong> ' . $row['msg'] . '</div><div class="timestamp">' . $row['created_on'] . '</div></div>';
-                } else {
-                    echo '<div class="message left"><div class="bubble left"><strong>testing user:</strong> ' . $row['msg'] . '</div><div class="timestamp">' . $row['created_on'] . '</div></div>';
-                }
-            }*/
-            ?>
-        </div> -->
-
-<!-- <div id="input-group">
-            <input type="text" id="user-input" placeholder="Type a message..." />
-            <button class="button-send" onclick="sendMessage()">Send</button>
-        </div>-->
-
-<script src="chatbot_userdata.php"></script>
-<script>
-    //ai system start 
-    /**/
-    //run initChat() when document is ready
-
-    window.onload = function() {
-        initChat();
-        storeWebSocketLink();
-    };
-
-
-
-    /* var data = {
-    chatinit: {
-        title: ["Hello <span class='emoji'> &#128075;</span>", "Welcome to Warung Satay Pak Malau", "How can I assist you today?"],
-        options: ["Order Satay <span class='emoji'> &#127844;</span>", "Track Order <span class='emoji'> &#128347;</span>", "Payment Issues <span class='emoji'> &#128179;</span>", "Customer Support <span class='emoji'> &#128100;</span>"]
-    },
-    order: {
-        title: ["Great! What type of satay would you like to order?"],
-        options: ["Chicken Satay", "Beef Satay", "Lamb Satay", "Mixed Satay"],
-        url: {
-            more: "#",
-            link: ["#", "#", "#", "#"]
-        }
-    },
-    track: {
-        title: ["Please enter your order number to track your delivery"],
-        options: [],
-        url: {
-            more: "#",
-            link: ["#"]
-        }
-    },
-    payment: {
-        title: ["We noticed you are facing payment issues", "Please select an option below to get help"],
-        options: ["Failed Transaction", "Refund Request", "Payment Method Help", "Other Issues"],
-        url: {
-            more: "#",
-            link: ["#", "#", "#", "#"]
-        }
-    },
-    support: {
-        title: ["How can we assist you further?"],
-        options: ["Speak to a Customer Representative", "FAQs", "Operating Hours", "Location & Contact"],
-        url: {
-            more: "#",
-            link: ["#", "#", "#", "#"]
-        }
-    },
-    chicken: {
-        title: ["Here are our Chicken Satay options"],
-        options: ["Chicken Satay - Regular", "Chicken Satay - Spicy", "Chicken Satay - Peanut Sauce"],
-        url: {
-            more: "#",
-            link: ["#", "#", "#"]
-        }
-    },
-    beef: {
-        title: ["Here are our Beef Satay options"],
-        options: ["Beef Satay - Regular", "Beef Satay - Spicy", "Beef Satay - Soy Sauce"],
-        url: {
-            more: "#",
-            link: ["#", "#", "#"]
-        }
-    },
-    lamb: {
-        title: ["Here are our Lamb Satay options"],
-        options: ["Lamb Satay - Regular", "Lamb Satay - Spicy", "Lamb Satay - Herb Marinade"],
-        url: {
-            more: "#",
-            link: ["#", "#", "#"]
-        }
-    },
-    mixed: {
-        title: ["Here are our Mixed Satay options"],
-        options: ["Mixed Satay - Chicken & Beef", "Mixed Satay - Chicken & Lamb", "Mixed Satay - Beef & Lamb"],
-        url: {
-            more: "#",
-            link: ["#", "#", "#"]
-        }
-    }
-}*/
-
-    const userid = <?php echo $userid; ?>;
-    const role = "<?php echo $role; ?>";
-
-    document.getElementById("init").addEventListener("click", showChatBot);
-    var cbot = document.getElementById("chat-box");
-
-    var len1 = data.chatinit.title.length; // to get the length of the array
-
-    function showChatBot() {
-        console.log(this.innerText);
-        if (this.innerText == 'CHAT NOW') {
-            document.getElementById('test').style.display = 'block';
-            document.getElementById('init').innerText = 'CLOSE CHAT';
-        } else {
-            document.getElementById('test').style.display = 'none';
-            document.getElementById('init').innerText = 'CHAT NOW';
-        }
-    }
-
-    function initChat() {
-        j = 0;
-        cbot.innerHTML = '';
-        for (var i = 0; i < len1; i++) {
-            setTimeout(handleChat, (i * 500));
-        }
-        setTimeout(function() {
-            showOptions(data.chatinit.options)
-        }, ((len1 + 1) * 500))
-    }
-
-    var j = 0;
-
-    function handleChat() {
-        var elm = document.createElement("p");
-        elm.innerHTML = data.chatinit.title[j];
-        elm.setAttribute("class", "msg");
-        cbot.appendChild(elm);
-        j++;
-        handleScroll();
-    }
-
-    function showOptions(options) {
-        for (var i = 0; i < options.length; i++) {
-            var opt = document.createElement("span");
-            var inp = '<div>' + options[i] + '</div>';
-            opt.innerHTML = inp;
-            opt.setAttribute("class", "opt");
-            opt.addEventListener("click", handleOpt);
-            cbot.appendChild(opt);
-            handleScroll();
-        }
-        // Add "Main Menu" option
-        var mainMenuOpt = document.createElement("span");
-        mainMenuOpt.innerHTML = '<div>Main Menu</div>';
-        mainMenuOpt.setAttribute("class", "opt");
-        mainMenuOpt.addEventListener("click", initChat);
-        cbot.appendChild(mainMenuOpt);
-        handleScroll();
-    }
-
-    function handleOpt() {
-        var str = this.innerText;
-        var findText = str.split(" ")[0].toLowerCase();
-
-        document.querySelectorAll(".opt").forEach(el => {
-            el.remove();
-        });
-
-        var elm = document.createElement("p");
-        elm.setAttribute("class", "test");
-        var sp = '<span class="rep">' + this.innerText + '</span>';
-        elm.innerHTML = sp;
-        cbot.appendChild(elm);
-
-        if (findText === "customer") {
-            // Special case for "Customer Support"
-            var supportElm = document.createElement("p");
-            supportElm.innerHTML = "<p>👋 <strong>Need Assistance?</strong><br>Click on the link provided below to connect with our customer service team for help!</p><p>🔗 <a href='http://localhost/' style='color: blue; text-decoration: underline;'>Connect with Customer Service</a></p>";
-            supportElm.setAttribute("class", "msg");
-            cbot.appendChild(supportElm);
-            var mainMenuOpt = document.createElement("span");
-            mainMenuOpt.innerHTML = '<div>Main Menu</div>';
-            mainMenuOpt.setAttribute("class", "opt");
-            mainMenuOpt.addEventListener("click", initChat);
-            cbot.appendChild(mainMenuOpt);
-        } else {
-            var tempObj = data[findText];
-            handleResults(tempObj.title, tempObj.options, tempObj.url);
-        }
-    }
-
-    function handleResults(title, options, url) {
-        for (let i = 0; i < title.length; i++) {
-            setTimeout(function() {
-                handleDelay(title[i]);
-            }, i * 500)
-        }
-
-        if (url.more) {
-            setTimeout(function() {
-                handleOptions(options, url);
-            }, title.length * 500);
-        } else {
-            setTimeout(function() {
-                showOptions(options);
-            }, title.length * 500);
-        }
-    }
-
-    function handleOptions(options, url) {
-        for (var i = 0; i < options.length; i++) {
-            var opt = document.createElement("span");
-            var inp = '<a class="m-link" href="' + url.link[i] + '">' + options[i] + '</a>';
-            opt.innerHTML = inp;
-            opt.setAttribute("class", "opt");
-            cbot.appendChild(opt);
-        }
-        handleScroll();
-    }
-
-    function handleDelay(title) {
-        var elm = document.createElement("p");
-        elm.innerHTML = title;
-        elm.setAttribute("class", "msg");
-        cbot.appendChild(elm);
-    }
-
-    function handleScroll() {
-        var elem = document.getElementById('chat-box');
-        elem.scrollTop = elem.scrollHeight;
-    }
-
-
-
-
-    //on open page run storeWebSocketLink() to store the websocket link
-</script>
-
-<style>
-    #test {
-        display: none;
-        position: fixed;
-        bottom: 10px;
-        right: 0;
-        margin: 1rem;
-        z-index: 1000;
-
-    }
-
-    #input-group {
-        display: none;
-    }
-
-    .close-chat {
-        border: none !important;
-        color: grey !important;
-        font-size: 25px !important;
-        cursor: pointer !important;
-        right: 15px !important;
-        top: 10px !important;
-        position: absolute !important;
-
-    }
-
-    .refBtn {
-        position: absolute;
-        bottom: 1rem;
-        right: 1rem;
-        background: none;
-        border: none;
-        border-radius: 50%;
-        color: indianred;
-        font-size: 18px;
-        cursor: pointer;
-    }
-
-    .desc p {
-        color: rgb(133, 153, 168);
-        margin: 0;
-        font-weight: 600;
-    }
-
-    .text {
-        font-size: 65px;
-        font-weight: 800;
-        color: cadetblue;
-        margin: 0;
-    }
-
-    .parent {
-        position: relative;
-        height: 100%;
-        padding: 0 7rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .bot-img {
-        width: 20rem;
-        height: 20rem;
-    }
-
-    .child {
-        box-shadow: 0 0 2px salmon;
-        border-radius: 15px;
-        height: 30rem;
-        width: 20rem;
-        margin: auto;
-        background: white;
-    }
-
-    .header img {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        margin: 0 0.5rem;
-        border: 1px solid rgb(231, 231, 231);
-        object-fit: contain;
-        /* This ensures the logo fits within the circle */
-        background-color: white;
-        /* Optional: This adds a white background */
-        padding: 0px;
-        /* Optional: Adjusts padding to fit the logo better */
-    }
-
-    .header {
-        position: absolute;
-        top: 0;
-        display: flex;
-        align-items: center;
-        border-bottom: 1px solid whitesmoke;
-        background: white;
-        width: 20rem;
-        padding: 5px 0;
-        border-top-right-radius: 15px;
-        border-top-left-radius: 15px;
-        z-index: 1;
-        box-shadow: 0 0 2px rgb(175, 175, 175);
-    }
-
-    .h-child {
-        display: flex;
-        align-items: center;
-    }
-
-    /* Ensure this is added or updated in your existing CSS */
-
-
-
-    .header span {
-        font-size: 13px;
-        margin: 0;
-        padding: 0;
-    }
-
-    .refBtn {
-        position: absolute;
-        bottom: 1rem;
-        right: 1rem;
-        background: none;
-        border: none;
-        border-radius: 50%;
-        color: indianred;
-        font-size: 18px;
-        cursor: pointer;
-    }
-
-    .name {
-        font-weight: 600;
-    }
-
-    .footer {
-        position: absolute;
-        bottom: 0;
-        width: 20rem;
-        background: white;
-        border-bottom-left-radius: 15px;
-        border-bottom-right-radius: 15px;
-        color: indianred;
-        padding: 15px 0;
-        text-align: center;
-        font-size: 14px;
-        box-shadow: 0 0 3px rgb(153, 153, 153);
-    }
-
-    .sent-msg {
-        position: absolute;
-        width: 20rem;
-        background: white;
-        padding: 15px 0;
-        text-align: center;
-        font-size: 14px;
-        box-shadow: 0 0 3px rgb(153, 153, 153);
-    }
-
-    .sent-msg input {
-        width: 70%;
-        padding: 10px;
-        border: 1px solid rgb(231, 231, 231);
-        border-radius: 15px;
-        margin: 0 0.5rem;
-    }
-
-    .button-send span,
-    .button-send img {
-        background: none;
-        border: none;
-        cursor: pointer;
-    }
-
-    .button-send img {
-        width: 30px;
-        height: 30px;
-    }
-
-
-    #chat-box {
-        position: relative;
-        top: 40px;
-        padding: 25px 10px;
-        font-size: 12px;
-        height: 24.2rem;
-        overflow: auto;
-        background: rgb(224, 241, 253);
-        text-align: center;
-        margin-bottom: 30px;
-    }
-
-    /* these classes will be used in javascript file */
-    .msg {
-        background: white;
-        padding: 5px 15px;
-        border-radius: 15px;
-        width: max-content;
-        font-size: 14px;
-        color: lightslategrey;
-        box-shadow: 0 0 5px rgb(226, 226, 226);
-        max-width: 65%;
-        text-align: left;
-        transition: opacity 0.3s ease-in-out;
-        /* Smooth fade-in transition */
-    }
-
-
-    .test {
-        text-align: right;
-        margin: 20px 0;
-    }
-
-    .rep {
-        background: rgb(253, 243, 224);
-        color: lightslategray;
-        padding: 5px 15px;
-        border-top-right-radius: 15px;
-        border-bottom-left-radius: 15px;
-        border-top-left-radius: 15px;
-        font-size: 14px;
-        box-shadow: 0 0 5px rgb(211, 211, 211);
-    }
-
-    .opt {
-        padding: 5px 20px;
-        columns: lightsalmon;
-        border: 1px solid blueviolet;
-        border-radius: 1rem;
-        margin: 0.3rem 0.5rem;
-        display: inline-block;
-        cursor: pointer;
-        font-weight: 500;
-        background: white;
-        text-align: center;
-        font-size: 14px;
-        color: blueviolet;
-    }
-
-    .link {
-        text-decoration: none;
-        display: block;
-        text-align: center;
-        color: aliceblue !important;
-        background: blueviolet;
-    }
-
-    .m-link {
-        text-decoration: none;
-    }
-
-    .link:active {
-        background: white;
-        border: 1px solid blueviolet;
-        color: blueviolet;
-    }
-</style>
+</html>

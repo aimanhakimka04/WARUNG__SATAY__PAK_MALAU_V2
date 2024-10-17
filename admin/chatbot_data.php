@@ -8,16 +8,13 @@ if ($conn->connect_error) {
 }
 
 // Handle form submission for adding or updating data
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save'])) {
     if (isset($_POST['section'], $_POST['title']) && !empty($_POST['title'])) {
         $section = $_POST['section'];
         $title = json_encode($_POST['title']); // Convert title array to JSON
 
         // Handle options: If options are not provided, default to an empty array
         $options = isset($_POST['options']) ? json_encode($_POST['options']) : json_encode([]); 
-
-        // Handle URLs: If URLs are not provided, default to an empty array
-        $urls = isset($_POST['urls']) ? json_encode($_POST['urls']) : json_encode([]); 
 
         // Check if section already exists
         $stmt = $conn->prepare("SELECT id FROM chatbot_data WHERE section = ?");
@@ -41,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 // Update existing record
                 $id = $_POST['id'];
-                $stmt = $conn->prepare("UPDATE chatbot_data SET section=?, title=?, options=?, urls=? WHERE id=?");
-                $stmt->bind_param("ssssi", $section, $title, $options, $urls, $id);
+                $stmt = $conn->prepare("UPDATE chatbot_data SET section=?, title=?, options=? WHERE id=?");
+                $stmt->bind_param("sssi", $section, $title, $options, $id);
                 
                 if ($stmt->execute()) {
                     echo "<script>alert('Record updated successfully.');</script>";
@@ -57,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($existingId) {
                 echo "<script>alert('Error: Section already exists in the database.');</script>";
             } else {
-                $stmt = $conn->prepare("INSERT INTO chatbot_data (section, title, options, urls) VALUES (?, ?, ?, ?)");
-                $stmt->bind_param("ssss", $section, $title, $options, $urls);
+                $stmt = $conn->prepare("INSERT INTO chatbot_data (section, title, options) VALUES (?, ?, ?)");
+                $stmt->bind_param("sss", $section, $title, $options);
                 
                 if ($stmt->execute()) {
                     echo "<script>alert('Record saved successfully.');</script>";
@@ -79,7 +76,6 @@ $id = '';
 $section = '';
 $titles = [];
 $options = [];
-$urls = [];
 
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
@@ -90,7 +86,6 @@ if (isset($_GET['id'])) {
         $section = $row['section'];
         $titles = json_decode($row['title'], true);
         $options = json_decode($row['options'], true);
-        $urls = json_decode($row['urls'], true);
     }
 }
 
@@ -163,6 +158,7 @@ $data = $conn->query("SELECT * FROM chatbot_data");
             margin-top: 30px;
             background-color: #fff;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
         th, td {
             padding: 12px;
@@ -191,7 +187,7 @@ $data = $conn->query("SELECT * FROM chatbot_data");
 <body>
     <div class="container">
         <h1>Manage Chatbot Data</h1>
-        <form method="POST">
+        <form method="POST" id="chatbot-form">
             <input type="hidden" name="id" value="<?php echo $id; ?>">
             <label>Section:</label>
             <input type="text" name="section" value="<?php echo $section; ?>" required>
@@ -220,7 +216,7 @@ $data = $conn->query("SELECT * FROM chatbot_data");
 
             <div class="form-actions">
                 <button type="submit" name="save">Save</button>
-                <button type="submit" name="clear">Clear</button>
+                <button type="button" onclick="clearForm()">Clear</button>
             </div>
         </form>
 
@@ -279,6 +275,18 @@ $data = $conn->query("SELECT * FROM chatbot_data");
             const inputGroup = button.parentNode;
             inputGroup.remove();
         }
+
+        function clearForm() {
+        // Reset the form fields
+        document.getElementById('chatbot-form').reset();
+
+        // Clear dynamically added fields (titles and options)
+        document.getElementById('title-container').innerHTML = '<button type="button" onclick="addField(\'title\')">Add More Title</button>';
+        document.getElementById('options-container').innerHTML = '<button type="button" onclick="addField(\'options\')">Add More Option</button>';
+
+        // Redirect to the specified page
+        window.location.href = '?page=chatbot_data';
+    }
     </script>
 </body>
 </html>
