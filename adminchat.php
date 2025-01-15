@@ -23,16 +23,10 @@ $usertoken = md5(uniqid()); //generate unique token
 $user_object->setUserToken($usertoken);
 $user_object->setUserId($userid);
 $user_object->setRole($role);
-// . $userid . "_" . Date('YmdHis') . "_" . rand(1000, 9999)
 $user_token = $userid . "_" . Date('YmdHis') . "_" . rand(1000, 9999);
-
-
-
 
 $link_webSocket = "ws://localhost:8080?token=" . $user_token;
 ?>
-
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -44,27 +38,19 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
     <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <style>
-        /* Ensure html and body take up full height and have no margin */
-
-
-        /* Make the chat-container take up full height and width */
         .chat-container {
             display: flex;
             height: 100%;
             width: 100%;
             border-radius: 0;
-            /* Remove border-radius for full-page */
             overflow: hidden;
             box-shadow: none;
-            /* Remove box-shadow for a cleaner full-page look */
             background: white;
         }
 
-        /* Adjust customer list to take full height and allow for better responsiveness */
         .customer-list {
             width: 30%;
             min-width: 250px;
-            /* Ensure a minimum width for smaller screens */
             padding: 20px;
             border-right: 1px solid #e0e0e0;
             background: #f7f9fc;
@@ -94,12 +80,9 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
 
         .customer.active {
             background: #d1e7dd;
-            /* Light green background */
             border-left: 4px solid #0f5132;
-            /* Optional: add a left border for emphasis */
         }
 
-        /* Make chat-panel take remaining width and full height */
         .chat-panel {
             width: 70%;
             display: flex;
@@ -114,8 +97,18 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
             font-size: 20px;
             font-weight: bold;
             text-align: center;
-            flex-shrink: 0;
-            /* Prevent shrinking */
+            position: relative;
+        }
+
+        .chat-header button {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background: red;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
         }
 
         .chat-messages {
@@ -124,11 +117,8 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
             overflow-y: auto;
             background: #f9f9f9;
             border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            flex-direction: column;
         }
 
-        /* Updated Message Styling */
         .message-container {
             display: flex;
             margin: 10px 0;
@@ -163,36 +153,10 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
             border-top-right-radius: 0;
         }
 
-        .message-container.user .message-content::after {
-            content: '';
-            position: absolute;
-            top: 10px;
-            left: -10px;
-            width: 0;
-            height: 0;
-            border-top: 10px solid transparent;
-            border-right: 10px solid #f1f0f0;
-            border-bottom: 10px solid transparent;
-        }
-
-        .message-container.admin .message-content::after {
-            content: '';
-            position: absolute;
-            top: 10px;
-            right: -10px;
-            width: 0;
-            height: 0;
-            border-top: 10px solid transparent;
-            border-left: 10px solid #6200ea;
-            border-bottom: 10px solid transparent;
-        }
-
         .chat-input {
             display: flex;
             padding: 20px;
             background: #ffffff;
-            flex-shrink: 0;
-            /* Prevent shrinking */
         }
 
         .chat-input input {
@@ -202,12 +166,6 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
             border-radius: 5px;
             margin-right: 10px;
             font-size: 16px;
-            transition: border 0.3s;
-        }
-
-        .chat-input input:focus {
-            border-color: #6200ea;
-            outline: none;
         }
 
         .chat-input button {
@@ -218,30 +176,6 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            transition: background 0.3s;
-        }
-
-        .chat-input button:hover {
-            background: #3700b3;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .chat-container {
-                flex-direction: column;
-            }
-
-            .customer-list {
-                width: 100%;
-                height: 150px;
-                border-right: none;
-                border-bottom: 1px solid #e0e0e0;
-            }
-
-            .chat-panel {
-                width: 100%;
-                height: calc(100% - 150px);
-            }
         }
     </style>
 </head>
@@ -264,27 +198,14 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
                 <div class="customer" data-userid="<?php echo htmlspecialchars($user['userid'], ENT_QUOTES, 'UTF-8'); ?>" data-email="<?php echo htmlspecialchars($result['email'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($result['email'], ENT_QUOTES, 'UTF-8'); ?></div>
 
             <?php endforeach; ?>
-            <!-- Add more customers dynamically -->
         </div>
 
         <!-- Chat Panel -->
         <div class="chat-panel">
-            <div class="chat-header" id="chatHeader">Chat with User</div>
-            <div class="chat-messages" id="chatMessages">
-                <!-- Example Messages -->
-                <!--
-                <div class="message-container user">
-                    <div class="message-content">
-                        <p>Hello! How can I assist you today?</p>
-                    </div>
-                </div>
-                <div class="message-container admin">
-                    <div class="message-content">
-                        <p>I need help with my account.</p>
-                    </div>
-                </div>
-                -->
+            <div class="chat-header" id="chatHeader">Chat with User
+                <button id="deleteConversation">Delete Chat</button>
             </div>
+            <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input">
                 <input type="text" id="chatInput" placeholder="Type a message...">
                 <button id="sendButton">Send</button>
@@ -295,7 +216,7 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
     <script type="text/javascript">
         $(document).ready(function () {
             let chat = {
-                userid: <?php echo json_encode($userid); ?>, // Safely pass PHP variable
+                userid: <?php echo json_encode($userid); ?>, 
                 wslink: '<?php echo $link_webSocket; ?>',
                 email: '',
                 conn: null
@@ -313,11 +234,9 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
             chat.conn.onmessage = function (e) {
                 var data = JSON.parse(e.data);
                 if (data.role === 'user') {
-                    displayMessage(data.msg, 'user'); // Display user message
+                    displayMessage(data.msg, 'user');
                 } else if (data.role === 'admin') {
-                    displayMessage(data.msg, 'admin'); // Display admin message
-                } else {
-                    console.warn("Unknown role:", data.role);
+                    displayMessage(data.msg, 'admin');
                 }
             };
 
@@ -325,12 +244,43 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
                 console.log("WebSocket connection closed.");
             };
 
-            // Handle customer selection
             $(document).on('click', '.customer', function () {
                 receiver_userid = $(this).data('userid');
                 receiver_email = $(this).data('email');
                 chat.email = receiver_email;
-                document.getElementById('chatHeader').textContent = 'Chat with ' + chat.email;
+
+                // Update chat header without removing the delete button
+                document.getElementById('chatHeader').innerHTML = 'Chat with ' + chat.email + '<button id="deleteConversation">Delete Chat</button>';
+
+                // Re-attach event listener for the delete button
+                $('#deleteConversation').off('click').on('click', function () {
+                    if (receiver_userid) {
+                        if (confirm('Are you sure you want to delete this conversation?')) {
+                            $.ajax({
+                                url: "../action.php",
+                                method: "POST",
+                                data: {
+                                    action: 'delete_conversation',
+                                    to_user_id: receiver_userid,
+                                    from_user_id: chat.userid
+                                },
+                                dataType: "json",
+                                success: function (response) {
+                                    if (response.success) {
+                                        $('#chatMessages').html('<p>Conversation deleted.</p>');
+                                    } else if (response.error) {
+                                        alert(response.error);
+                                    }
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error("Failed to delete conversation:", error);
+                                }
+                            });
+                        }
+                    } else {
+                        alert("No conversation selected.");
+                    }
+                });
 
                 var from_user_id = chat.userid;
                 $.ajax({
@@ -347,148 +297,51 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
                             $('#chatMessages').html('<p>' + escapeHtml(data.error) + '</p>');
                             return;
                         }
-                        console.log(data);
 
-                        if (data.length > 0) { // Fixed typo here
-                            var html_data = '';
-                            for (var count = 0; count < data.length; count++) {
-                                var row_class = '';
-                                var user_name = '';
-
-                                if (data[count].to_user_id == receiver_userid) {
-                                    row_class = 'message-container admin';
-                                    user_name = chat.email;
-                                    var message = data[count].message; // Adjust field name as per your DB
-                                } else {
-                                    row_class = 'message-container user';
-                                    user_name = 'Me';
-                                    var message = data[count].message;
-                                }
-
-                                html_data += `
-                                    <div class="${row_class}">
-                                        <div class="message-content">
-                                            <p>${escapeHtml(message)}</p>
-                                        </div>
-                                    </div>
-                                `;
+                        if (data.length > 0) {
+                            var html = '';
+                            for (var i = 0; i < data.length; i++) {
+                                html += '<div class="message-container ' + (data[i].role === 'admin' ? 'admin' : 'user') + '">';
+                                html += '<div class="message-content">' + escapeHtml(data[i].message) + '</div>';
+                                html += '</div>';
                             }
-                            $('#chatMessages').html(html_data);
-                            // Scroll to the bottom after loading messages
-                            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+                            $('#chatMessages').html(html);
                         } else {
-                            $('#chatMessages').html('<p>No messages yet. Start the conversation!</p>');
+                            $('#chatMessages').html('<p>No chat messages found.</p>');
                         }
-
-                        // Set the active customer
-                        setActiveCustomer(this);
                     },
                     error: function (xhr, status, error) {
-                        console.error("AJAX Error:", status, error);
-                        alert("An error occurred while fetching chat history.");
+                        console.error("Failed to fetch chat:", error);
                     }
                 });
             });
 
-            function setActiveCustomer(element) {
-                // Remove 'active' class from all customers
-                const customers = document.querySelectorAll('.customer');
-                customers.forEach(function (customer) {
-                    customer.classList.remove('active');
-                });
+            $('#sendButton').on('click', function () {
+                var message = $('#chatInput').val();
+                if (message.trim() === '') {
+                    return;
+                }
 
-                // Add 'active' class to the clicked customer
-                element.classList.add('active');
-            }
-
-            function sendMessage() {
-                const messageInput = document.getElementById('chatInput');
-                const message = messageInput.value.trim();
-
-                if (message === '') return;
-
-                const data = {
-                    role: 'admin', // Adjust role based on your application logic
-                    userid: chat.userid,
-                    to_user_id: receiver_userid,
+                var data = {
+                    role: 'admin',
                     msg: message,
-                    command: 'Private'
+                    to_user_id: receiver_userid,
+                    from_user_id: chat.userid
                 };
-
-                if (chat.conn && chat.conn.readyState === WebSocket.OPEN) {
-                    chat.conn.send(JSON.stringify(data));
-                   // displayMessage(message, 'admin'); // Display sent message
-                    messageInput.value = ''; // Clear input
-
-                    // Send the message to the server via AJAX to store in the database
-                    $.ajax({
-                        url: "../action.php",
-                        method: "POST",
-                        data: {
-                            action: 'send_message',
-                            to_user_id: receiver_userid,
-                            from_user_id: chat.userid,
-                            message: message,
-                            role: 'admin' // Pass the role
-                        },
-                        dataType: "json",
-                        success: function (response) {
-                            if(response.success){
-                                console.log("Message sent and stored.");
-                            } else if(response.error){
-                                console.error("Error:", response.error);
-                            }
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Failed to store message:", error);
-                        }
-                    });
-
-                } else {
-                    alert("WebSocket connection is not open.");
-                }
-            }
-
-            function displayMessage(message, sender) {
-                const chatMessagesDiv = document.getElementById('chatMessages');
-
-                // Create message container
-                const messageContainer = document.createElement('div');
-                messageContainer.classList.add('message-container', sender);
-
-                // Create message content
-                const messageContent = document.createElement('div');
-                messageContent.classList.add('message-content');
-                messageContent.innerHTML = `<p>${escapeHtml(message)}</p>`;
-
-                // Append message content to container
-                messageContainer.appendChild(messageContent);
-
-                // Append container to chat messages
-                chatMessagesDiv.appendChild(messageContainer);
-
-                // Scroll to the bottom
-                chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
-            }
-
-            // Add click event listener to send button
-            document.getElementById('sendButton').onclick = sendMessage;
-
-            // Allow sending message with Enter key
-            document.getElementById('chatInput').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
+                chat.conn.send(JSON.stringify(data));
+                $('#chatInput').val('');
+                displayMessage(message, 'admin');
             });
 
-            // Escape HTML to prevent XSS
+            function displayMessage(message, role) {
+                var container = $('<div class="message-container ' + role + '"></div>');
+                var content = $('<div class="message-content"></div>').text(message);
+                container.append(content);
+                $('#chatMessages').append(container);
+            }
+
             function escapeHtml(text) {
-                return text
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
+                return $('<div>').text(text).html();
             }
         });
     </script>

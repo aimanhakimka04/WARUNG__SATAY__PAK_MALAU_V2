@@ -1,3 +1,12 @@
+<?php
+// Disable error reporting
+error_reporting(0);
+ini_set('display_errors', 0);
+
+// Display PHP info
+
+?>
+
 <?php ob_start();//turn on output buffering
 //include the configuration file
 $_SESSION['wallettopup'] = false;
@@ -11,6 +20,7 @@ require_once 'config.php'; ?>
 session_start();
 include('header.php');
 include('admin/db_connect.php');
+
 
 $query = $conn->query("SELECT * FROM system_settings limit 1")->fetch_array();
 foreach ($query as $key => $value) {

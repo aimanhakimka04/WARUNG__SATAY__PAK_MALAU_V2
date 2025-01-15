@@ -1,4 +1,8 @@
 <?php
+
+
+use Google\Service\CloudControlsPartnerService\Console;
+
 include __DIR__ . '/database/ChatUser.php';
 $role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
 
@@ -11,21 +15,19 @@ if ($role == 'admin') {
 }
 
 require('database/ChatRooms.php');
-require('admin/db_connect.php');
 
 $chat_object = new ChatRooms();
 $user_object = new ChatUser();
 
 $chat_data = $chat_object->get_all_chat_data();
-$users = $chat_object->showsadmininquries();
 
 //get usertoken for websocket
 $usertoken = md5(uniqid()); //generate unique token
 $user_object->setUserToken($usertoken);
 $user_object->setUserId($userid);
 $user_object->setRole($role);
-// . $userid . "_" . Date('YmdHis') . "_" . rand(1000, 9999)
-$user_token = $userid . "_" . Date('YmdHis') . "_" . rand(1000, 9999);
+// . $userid . "" . Date('YmdHis') . "" . rand(1000, 9999)
+$user_token = $userid . "" . Date('YmdHis') . "" . rand(1000, 9999);
 
 
 
@@ -35,465 +37,677 @@ $link_webSocket = "ws://localhost:8080?token=" . $user_token;
 
 
 
-<!DOCTYPE html>
-<html lang="en">
+<div id="test">
+    <div class="child" id="chatbot" style="height:34rem;">
+        <div class="header">
+            <div class="h-child">
+                <img src="images/logo2.png" alt="avatar" class="logo-bot">
+                <div>
+                    <span class="name">Customer Service</span>
+                    <br>
+                    <span style="color:lawngreen">online</span>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private Chat</title>
-    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <style>
-        /* Ensure html and body take up full height and have no margin */
-
-
-        /* Make the chat-container take up full height and width */
-        .chat-container {
-            display: flex;
-            height: 100%;
-            width: 100%;
-            border-radius: 0;
-            /* Remove border-radius for full-page */
-            overflow: hidden;
-            box-shadow: none;
-            /* Remove box-shadow for a cleaner full-page look */
-            background: white;
-        }
-
-        /* Adjust customer list to take full height and allow for better responsiveness */
-        .customer-list {
-            width: 30%;
-            min-width: 250px;
-            /* Ensure a minimum width for smaller screens */
-            padding: 20px;
-            border-right: 1px solid #e0e0e0;
-            background: #f7f9fc;
-            overflow-y: auto;
-        }
-
-        .customer-list h3 {
-            margin: 0 0 20px;
-            font-weight: 500;
-            color: #333;
-            text-align: center;
-        }
-
-        .customer {
-            padding: 12px;
-            margin: 5px 0;
-            border-radius: 5px;
-            background: #ffffff;
-            transition: background 0.3s;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        .customer:hover {
-            background: #e1e7ff;
-        }
-
-        .customer.active {
-            background: #d1e7dd;
-            /* Light green background */
-            border-left: 4px solid #0f5132;
-            /* Optional: add a left border for emphasis */
-        }
-
-        /* Make chat-panel take remaining width and full height */
-        .chat-panel {
-            width: 70%;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .chat-header {
-            padding: 20px;
-            background: #6200ea;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            text-align: center;
-            flex-shrink: 0;
-            /* Prevent shrinking */
-        }
-
-        .chat-messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background: #f9f9f9;
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Updated Message Styling */
-        .message-container {
-            display: flex;
-            margin: 10px 0;
-        }
-
-        .message-container.user {
-            justify-content: flex-start;
-        }
-
-        .message-container.admin {
-            justify-content: flex-end;
-        }
-
-        .message-content {
-            max-width: 70%;
-            padding: 12px 20px;
-            border-radius: 20px;
-            position: relative;
-            word-wrap: break-word;
-            font-size: 16px;
-        }
-
-        .message-container.user .message-content {
-            background-color: #f1f0f0;
-            color: #333;
-            border-top-left-radius: 0;
-        }
-
-        .message-container.admin .message-content {
-            background-color: #6200ea;
-            color: white;
-            border-top-right-radius: 0;
-        }
-
-        .message-container.user .message-content::after {
-            content: '';
-            position: absolute;
-            top: 10px;
-            left: -10px;
-            width: 0;
-            height: 0;
-            border-top: 10px solid transparent;
-            border-right: 10px solid #f1f0f0;
-            border-bottom: 10px solid transparent;
-        }
-
-        .message-container.admin .message-content::after {
-            content: '';
-            position: absolute;
-            top: 10px;
-            right: -10px;
-            width: 0;
-            height: 0;
-            border-top: 10px solid transparent;
-            border-left: 10px solid #6200ea;
-            border-bottom: 10px solid transparent;
-        }
-
-        .chat-input {
-            display: flex;
-            padding: 20px;
-            background: #ffffff;
-            flex-shrink: 0;
-            /* Prevent shrinking */
-        }
-
-        .chat-input input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-right: 10px;
-            font-size: 16px;
-            transition: border 0.3s;
-        }
-
-        .chat-input input:focus {
-            border-color: #6200ea;
-            outline: none;
-        }
-
-        .chat-input button {
-            padding: 12px 20px;
-            border: none;
-            background: #6200ea;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.3s;
-        }
-
-        .chat-input button:hover {
-            background: #3700b3;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .chat-container {
-                flex-direction: column;
-            }
-
-            .customer-list {
-                width: 100%;
-                height: 150px;
-                border-right: none;
-                border-bottom: 1px solid #e0e0e0;
-            }
-
-            .chat-panel {
-                width: 100%;
-                height: calc(100% - 150px);
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <div class="chat-container">
-        <!-- Customer List -->
-        <div class="customer-list">
-            <h3>Customers</h3>
-            <?php foreach ($users as $user): ?>
-
-                <?php
-                $query = "SELECT * FROM users WHERE id = ?";
-                $stmt = $conn->prepare($query);
-                $stmt->bind_param("i", $user['userid']);
-                $stmt->execute();
-                $result = $stmt->get_result(); // Get the result from the query
-                $result = $result->fetch_assoc(); // Fetch the data
-                print_r($result);
-                ?>
-                <div class="customer" data-userid="<?php echo htmlspecialchars($result['id'], ENT_QUOTES, 'UTF-8'); ?>" data-email="<?php echo htmlspecialchars($result['email'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($result['email'], ENT_QUOTES, 'UTF-8'); ?></div>
-
-            <?php endforeach; ?>
-            <!-- Add more customers dynamically -->
+                </div>
+            </div><span class="close-chat" onclick="showChatBot()">X</span>
+            <div>
+                <!--<button class="refBtn"><i class="fa fa-refresh" onclick="initChat()"></i></button>-->
+            </div>
         </div>
 
-        <!-- Chat Panel -->
-        <div class="chat-panel">
-            <div class="chat-header" id="chatHeader">Chat with User</div>
-            <div class="chat-messages" id="chatMessages">
-                <!-- Example Messages -->
-                <!--
-                <div class="message-container user">
-                    <div class="message-content">
-                        <p>Hello! How can I assist you today?</p>
-                    </div>
-                </div>
-                <div class="message-container admin">
-                    <div class="message-content">
-                        <p>I need help with my account.</p>
-                    </div>
-                </div>
-                -->
-            </div>
-            <div class="chat-input">
-                <input type="text" id="chatInput" placeholder="Type a message...">
-                <button id="sendButton">Send</button>
-            </div>
+        <div id="chat-box">
+
+        </div>
+        <div id="input-group" class="sent-msg">
+            <input type="text" id="user-input" placeholder="Type a message..." />
+            <span class="button-send" onclick="sendMessage()"><img src="images/sent.png" /></bu>
+        </div>
+        <div class="footer">
+            <span>powered by @pakmalausatay</span>
         </div>
     </div>
+</div>
 
-    <script type="text/javascript">
-        $(document).ready(function () {
-            let chat = {
-                userid: <?php echo json_encode($userid); ?>, // Safely pass PHP variable
-                wslink: '<?php echo $link_webSocket; ?>',
-                email: '',
-                conn: null
-            };
-            var receiver_userid = ''; // Receiver user id
-            var receiver_email = ''; // Receiver email
-
-            // Initialize WebSocket connection
-            chat.conn = new WebSocket(chat.wslink);
-
-            chat.conn.onopen = function () {
-                console.log("WebSocket connection established.");
-            };
-
-            chat.conn.onmessage = function (e) {
-                var data = JSON.parse(e.data);
-                if (data.role === 'user') {
-                    displayMessage(data.msg, 'user'); // Display user message
-                } else if (data.role === 'admin') {
-                    displayMessage(data.msg, 'admin'); // Display admin message
+<!-- <div id="messages">
+            <?php /*
+            foreach ($chat_data as $row) {
+                if ($userid == $row['userid'] && $role == $row['role_user']) {
+                    echo '<div class="message right"><div class="bubble right"><strong>You:</strong> ' . $row['msg'] . '</div><div class="timestamp">' . $row['created_on'] . '</div></div>';
                 } else {
-                    console.warn("Unknown role:", data.role);
+                    echo '<div class="message left"><div class="bubble left"><strong>testing user:</strong> ' . $row['msg'] . '</div><div class="timestamp">' . $row['created_on'] . '</div></div>';
                 }
-            };
+            }*/
+            ?>
+        </div> -->
 
-            chat.conn.onclose = function () {
-                console.log("WebSocket connection closed.");
-            };
+<!-- <div id="input-group">
+            <input type="text" id="user-input" placeholder="Type a message..." />
+            <button class="button-send" onclick="sendMessage()">Send</button>
+        </div>-->
 
-            // Handle customer selection
-            $(document).on('click', '.customer', function () {
-                receiver_userid = $(this).data('userid');
-                receiver_email = $(this).data('email');
-                chat.email = receiver_email;
-                document.getElementById('chatHeader').textContent = 'Chat with ' + chat.email;
+<script src="chatbot_userdata.php"></script>
+<script>
+    //ai system start 
+    //run initChat() when document is ready
 
-                var from_user_id = chat.userid;
-                $.ajax({
-                    url: "../action.php",
-                    method: "POST",
-                    data: {
-                        action: 'fetch_chat',
-                        to_user_id: receiver_userid,
-                        from_user_id: from_user_id
-                    },
-                    dataType: "json",
-                    success: function (data) {
-                        if (data.error) {
-                            $('#chatMessages').html('<p>' + escapeHtml(data.error) + '</p>');
-                            return;
-                        }
-                        console.log(data);
+    window.onload = function() {
+        initChat();
+        storeWebSocketLink();
+    };
 
-                        if (data.length > 0) { // Fixed typo here
-                            var html_data = '';
-                            for (var count = 0; count < data.length; count++) {
-                                var row_class = '';
-                                var user_name = '';
 
-                                if (data[count].to_user_id == receiver_userid) {
-                                    row_class = 'message-container admin';
-                                    user_name = chat.email;
-                                    var message = data[count].message; // Adjust field name as per your DB
-                                } else {
-                                    row_class = 'message-container user';
-                                    user_name = 'Me';
-                                    var message = data[count].message;
-                                }
 
-                                html_data += `
-                                    <div class="${row_class}">
-                                        <div class="message-content">
-                                            <p>${escapeHtml(message)}</p>
-                                        </div>
-                                    </div>
-                                `;
-                            }
-                            $('#chatMessages').html(html_data);
-                            // Scroll to the bottom after loading messages
-                            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
-                        } else {
-                            $('#chatMessages').html('<p>No messages yet. Start the conversation!</p>');
-                        }
+    /*var data = {
+    chatinit: {
+        title: ["Hello <span class='emoji'> &#128075;</span>", "Welcome to Warung Satay Pak Malau", "How can I assist you today?"],
+        options: ["Order Satay <span class='emoji'> &#127844;</span>", "Track Order <span class='emoji'> &#128347;</span>", "Payment Issues <span class='emoji'> &#128179;</span>", "Customer Support <span class='emoji'> &#128100;</span>"]
+    },
+    order: {
+        title: ["Great! What type of satay would you like to order?"],
+        options: ["Chicken Satay", "Beef Satay", "Lamb Satay", "Mixed Satay"],
+        url: {
+            more: "#",
+            link: ["#", "#", "#", "#"]
+        }
+    },
+    track: {
+        title: ["Please enter your order number to track your delivery"],
+        options: [],
+        url: {
+            more: "#",
+            link: ["#"]
+        }
+    },
+    payment: {
+        title: ["We noticed you are facing payment issues", "Please select an option below to get help"],
+        options: ["Failed Transaction", "Refund Request", "Payment Method Help", "Other Issues"],
+        url: {
+            more: "#",
+            link: ["#", "#", "#", "#"]
+        }
+    },
+    support: {
+        title: ["How can we assist you further?"],
+        options: ["Speak to a Customer Representative", "FAQs", "Operating Hours", "Location & Contact"],
+        url: {
+            more: "#",
+            link: ["#", "#", "#", "#"]
+        }
+    },
+    chicken: {
+        title: ["Here are our Chicken Satay options"],
+        options: ["Chicken Satay - Regular", "Chicken Satay - Spicy", "Chicken Satay - Peanut Sauce"],
+        url: {
+            more: "#",
+            link: ["#", "#", "#"]
+        }
+    },
+    beef: {
+        title: ["Here are our Beef Satay options"],
+        options: ["Beef Satay - Regular", "Beef Satay - Spicy", "Beef Satay - Soy Sauce"],
+        url: {
+            more: "#",
+            link: ["#", "#", "#"]
+        }
+    },
+    lamb: {
+        title: ["Here are our Lamb Satay options"],
+        options: ["Lamb Satay - Regular", "Lamb Satay - Spicy", "Lamb Satay - Herb Marinade"],
+        url: {
+            more: "#",
+            link: ["#", "#", "#"]
+        }
+    },
+    mixed: {
+        title: ["Here are our Mixed Satay options"],
+        options: ["Mixed Satay - Chicken & Beef", "Mixed Satay - Chicken & Lamb", "Mixed Satay - Beef & Lamb"],
+        url: {
+            more: "#",
+            link: ["#", "#", "#"]
+        }
+    }
+}*/
 
-                        // Set the active customer
-                        setActiveCustomer(this);
-                    },
-                    error: function (xhr, status, error) {
-                        console.error("AJAX Error:", status, error);
-                        alert("An error occurred while fetching chat history.");
-                    }
-                });
-            });
+    const userid = <?php echo $userid; ?>;
+    const role = "<?php echo $role; ?>";
 
-            function setActiveCustomer(element) {
-                // Remove 'active' class from all customers
-                const customers = document.querySelectorAll('.customer');
-                customers.forEach(function (customer) {
-                    customer.classList.remove('active');
-                });
 
-                // Add 'active' class to the clicked customer
-                element.classList.add('active');
-            }
+    document.getElementById("init").addEventListener("click", showChatBot);
+    var cbot = document.getElementById("chat-box");
 
-            function sendMessage() {
-                const messageInput = document.getElementById('chatInput');
-                const message = messageInput.value.trim();
+    var len1 = data.chatinit.title.length; // to get the length of the array
 
-                if (message === '') return;
+    function showChatBot() {
 
-                const data = {
-                    role: 'admin', // Adjust role based on your application logic
-                    userid: chat.userid,
-                    to_user_id: receiver_userid,
-                    msg: message,
-                    command: 'Private'
-                };
+        console.log(this.innerText);
+        if (this.innerText == 'CHAT NOW') {
+            document.getElementById('test').style.display = 'block';
+            document.getElementById('init').innerText = 'CLOSE CHAT';
+        } else {
+            document.getElementById('test').style.display = 'none';
+            document.getElementById('init').innerText = 'CHAT NOW';
+            // location.reload();
+        }
+    }
 
-                if (chat.conn && chat.conn.readyState === WebSocket.OPEN) {
-                    chat.conn.send(JSON.stringify(data));
-                   // displayMessage(message, 'admin'); // Display sent message
-                    messageInput.value = ''; // Clear input
+    function initChat() {
+        j = 0;
+        cbot.innerHTML = ''; // Clear previous chat
+        for (var i = 0; i < len1; i++) {
+            setTimeout(handleChat, i * 1000); // Add a 1-second delay between messages
+        }
+        setTimeout(function() {
+            showOptions(data.chatinit.options);
+        }, ((len1 + 1) * 1000)); // Show options after the last message
+    }
 
-                    // Send the message to the server via AJAX to store in the database
-                    $.ajax({
-                        url: "../action.php",
-                        method: "POST",
-                        data: {
-                            action: 'send_message',
-                            to_user_id: receiver_userid,
-                            from_user_id: chat.userid,
-                            message: message,
-                            role: 'admin' // Pass the role
-                        },
-                        dataType: "json",
-                        success: function (response) {
-                            if(response.success){
-                                console.log("Message sent and stored.");
-                            } else if(response.error){
-                                console.error("Error:", response.error);
-                            }
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Failed to store message:", error);
-                        }
-                    });
+    var j = 0;
 
+    function handleChat() {
+        console.log(j);
+        var elm = document.createElement("p");
+        elm.innerHTML = data.chatinit.title[j];
+        elm.setAttribute("class", "msg");
+
+        // Append message with a fade-in effect
+        elm.style.opacity = 0;
+        cbot.appendChild(elm);
+        setTimeout(() => {
+            elm.style.opacity = 1; // Gradually show the message
+        }, 300); // Delay before making it fully visible
+
+        j++;
+        handleScroll();
+    }
+
+
+    function showOptions(options) {
+        for (var i = 0; i < options.length; i++) {
+            var opt = document.createElement("span");
+            var inp = '<div>' + options[i] + '</div>';
+            opt.innerHTML = inp;
+            opt.setAttribute("class", "opt");
+            opt.addEventListener("click", handleOpt);
+            cbot.appendChild(opt);
+            handleScroll();
+        }
+    }
+
+    function storeWebSocketLink() {
+        fetch('store_websocket.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'userid=' + encodeURIComponent(userid) + '&link_webSocket=' + encodeURIComponent(link_webSocket) + '&role=' + encodeURIComponent(role) + '&user_token=' + encodeURIComponent(user_token)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log("WebSocket link stored successfully.");
                 } else {
-                    alert("WebSocket connection is not open.");
+                    console.error("Error storing WebSocket link:", data.message);
                 }
-            }
-
-            function displayMessage(message, sender) {
-                const chatMessagesDiv = document.getElementById('chatMessages');
-
-                // Create message container
-                const messageContainer = document.createElement('div');
-                messageContainer.classList.add('message-container', sender);
-
-                // Create message content
-                const messageContent = document.createElement('div');
-                messageContent.classList.add('message-content');
-                messageContent.innerHTML = `<p>${escapeHtml(message)}</p>`;
-
-                // Append message content to container
-                messageContainer.appendChild(messageContent);
-
-                // Append container to chat messages
-                chatMessagesDiv.appendChild(messageContainer);
-
-                // Scroll to the bottom
-                chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
-            }
-
-            // Add click event listener to send button
-            document.getElementById('sendButton').onclick = sendMessage;
-
-            // Allow sending message with Enter key
-            document.getElementById('chatInput').addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
             });
+    }
+    //on open page run storeWebSocketLink() to store the websocket link
 
-            // Escape HTML to prevent XSS
-            function escapeHtml(text) {
-                return text
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            }
+
+    function handleOpt() {
+        console.log(this); // Log the clicked element
+        var str = this.innerText;
+        var textArr = str.split(" ");
+        var findText = textArr[0].toLowerCase();
+
+        document.querySelectorAll(".opt").forEach(el => {
+            el.remove();
         });
-    </script>
-</body>
 
-</html>
+        var elm = document.createElement("p");
+        elm.setAttribute("class", "test"); // Add a class to the element named "test"
+        var sp = '<span class="rep">' + this.innerText + '</span>';
+        elm.innerHTML = sp;
+        cbot.appendChild(elm);
+
+        console.log(findText);
+        var tempObj = data[findText];
+
+        if (findText === "customer") {
+            if (userid == 0) {
+                // Ask user to login
+                elm = document.createElement("p");
+                elm.innerHTML = "Please login to access customer support. Page will refresh in 5 seconds.";
+                cbot.appendChild(elm);
+
+                // Reload page after 5 seconds
+                setTimeout(function() {
+                    location.reload();
+                }, 5000);
+                console.log("Please login to access customer support.");
+            } else if (userid != 0) {
+                // Show the input group if "Customer Support" is selected
+                document.getElementById("input-group").style.display = "block";
+                document.getElementById("chatbot").style.height = "34rem";
+
+                // Send AJAX request to store the WebSocket link
+                storeWebSocketLink();
+            }
+        } else {
+            // Hide the input group and display a message to the user
+            document.getElementById("input-group").style.display = "none";
+            document.getElementById("chatbot").style.height = "30rem";
+            var elm = document.createElement("p");
+            elm.innerHTML = "Please click the Customer Support option.";
+            elm.setAttribute("class", "msg");
+            cbot.appendChild(elm);
+        }
+
+        handleResults(tempObj.title, tempObj.options, tempObj.url);
+        handleScroll();
+    }
+
+
+    function handleDelay(title) {
+        var elm = document.createElement("p");
+        elm.innerHTML = title;
+        elm.setAttribute("class", "msg");
+        cbot.appendChild(elm);
+    }
+
+
+    function handleResults(title, options, url) {
+        for (let i = 0; i < title.length; i++) {
+            setTimeout(function() {
+                handleDelay(title[i]);
+            }, i * 500)
+
+        }
+
+        const isObjectEmpty = (url) => {
+            return JSON.stringify(url) === "{}";
+        }
+
+        if (isObjectEmpty(url) == true) {
+            console.log("having more options");
+            setTimeout(function() {
+                showOptions(options);
+            }, title.length * 500)
+
+        } else {
+            console.log("end result");
+            setTimeout(function() {
+                handleOptions(options, url);
+            }, title.length * 500)
+
+        }
+    }
+
+    function handleOptions(options, url) {
+        for (var i = 0; i < options.length; i++) {
+            var opt = document.createElement("span");
+            var inp = '<a class="m-link" href="' + url.link[i] + '">' + options[i] + '</a>';
+            opt.innerHTML = inp;
+            opt.setAttribute("class", "opt");
+            cbot.appendChild(opt);
+        }
+        var opt = document.createElement("span");
+        var inp = '<a class="m-link" href="' + url.more + '">' + 'See more</a>';
+
+        const isObjectEmpty = (url) => {
+            return JSON.stringify(url) === "{}";
+        }
+
+        console.log(isObjectEmpty(url));
+        console.log(url);
+        opt.innerHTML = inp;
+        opt.setAttribute("class", "opt link");
+        cbot.appendChild(opt);
+        handleScroll();
+    }
+
+    function handleScroll() {
+        var elem = document.getElementById('chat-box');
+        elem.scrollTop = elem.scrollHeight;
+    }
+
+    //end of ai system
+    var link_webSocket = "<?php echo $link_webSocket; ?>";
+    var user_token = "<?php echo $user_token; ?>";
+
+
+    function getWebSocketURL() {
+        const hostname = window.location.hostname;
+        if (hostname === 'localhost') {
+            return link_webSocket;
+        } else {
+            return 'ws://206.189.84.162:8080';
+        }
+    }
+
+    // Generate a random client ID
+    function generateClientId() {
+        return 'client-' + Math.random().toString(36).substr(2, 9);
+    }
+
+    const clientId = 1;
+    var conn = new WebSocket(getWebSocketURL());
+
+    conn.onopen = function(e) {
+        console.log("Connection established!");
+    };
+
+    conn.onmessage = function(e) {
+        console.log(e.data);
+
+        var data = JSON.parse(e.data);
+
+        const messagesDiv = document.getElementById('rep');
+        const timestamp = new Date().toLocaleTimeString();
+        var sp;
+        var elm = document.createElement("p");
+
+
+
+
+        if (data.userid === userid) {
+            //messagesDiv.innerHTML += <div class="message right"><div class="bubble right"><strong>You:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>;
+            elm.setAttribute("class", "test"); // Add a class to the element named "test"
+            sp = '<span class="rep">' + data.msg + '</span>';
+            elm.innerHTML = sp;
+
+        } else {
+            // messagesDiv.innerHTML += <div class="message left"><div class="bubble left"><strong>${data.usremail}:</strong> ${data.msg}</div><div class="timestamp">${timestamp}</div></div>;
+            elm.innerHTML = data.msg;
+            elm.setAttribute("class", "msg");
+
+            // Append message with a fade-in effect
+            elm.style.opacity = 0;
+
+        }
+        cbot.appendChild(elm);
+        setTimeout(() => {
+            elm.style.opacity = 1; // Gradually show the message
+        }, 300); // Delay before making it fully visible
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    };
+    conn.onerror = function(e) {
+        console.error("WebSocket error observed:", e);
+    };
+
+
+    document.getElementById('user-input').addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    function sendMessage() {
+        const userInput = document.getElementById('user-input').value;
+        const timestamp = new Date().toLocaleTimeString();
+
+        if (userInput.trim() === '') return;
+
+        var data = {
+            role: role,
+            userid: userid,
+            clientId: 1,
+            receiver_userid: 0, //0 means admin
+            msg: userInput,
+            command: 'Private'
+        }
+
+        conn.send(JSON.stringify(data));
+
+        const messagesDiv = document.getElementById('messages');
+        //messagesDiv.scrollTop = messagesDiv.scrollHeight; //to scroll to the bottom of the chat
+        document.getElementById('user-input').value = '';
+    }
+</script>
+
+<style>
+    #test {
+        display: block;
+        bottom: 10px;
+        right: 0;
+        margin: 1rem;
+        z-index: 1000;
+
+    }
+
+    #input-group {
+        
+    }
+
+    .close-chat {
+        border: none !important;
+        color: grey !important;
+        font-size: 25px !important;
+        cursor: pointer !important;
+        right: 15px !important;
+        top: 10px !important;
+        position: absolute !important;
+
+    }
+
+    .desc p {
+        color: rgb(133, 153, 168);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .text {
+        font-size: 65px;
+        font-weight: 800;
+        color: cadetblue;
+        margin: 0;
+    }
+
+    .parent {
+        position: relative;
+        height: 100%;
+        padding: 0 7rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .bot-img {
+        width: 20rem;
+        height: 20rem;
+    }
+
+    .child {
+        box-shadow: 0 0 2px salmon;
+        border-radius: 15px;
+        height: 30rem;
+        width: 16rem;
+        margin: auto;
+        background: white;
+    }
+
+    .header img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin: 0 0.5rem;
+        border: 1px solid rgb(231, 231, 231);
+        object-fit: contain;
+        /* This ensures the logo fits within the circle */
+        background-color: white;
+        /* Optional: This adds a white background */
+        padding: 0px;
+        /* Optional: Adjusts padding to fit the logo better */
+    }
+
+    .header {
+        position: absolute;
+        top: 0;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid whitesmoke;
+        background: white;
+        width: 16rem;
+        padding: 5px 0;
+        border-top-right-radius: 15px;
+        border-top-left-radius: 15px;
+        z-index: 1;
+        box-shadow: 0 0 2px rgb(175, 175, 175);
+    }
+
+    .h-child {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Ensure this is added or updated in your existing CSS */
+
+
+
+    .header span {
+        font-size: 13px;
+        margin: 0;
+        padding: 0;
+    }
+
+    .refBtn {
+        position: absolute;
+        bottom: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        border-radius: 50%;
+        color: indianred;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .name {
+        font-weight: 600;
+    }
+
+    .footer {
+        
+        bottom: 0;
+        width: 16rem;
+        background: white;
+        border-bottom-left-radius: 15px;
+        border-bottom-right-radius: 15px;
+        color: indianred;
+        padding: 15px 0;
+        text-align: center;
+        font-size: 14px;
+        box-shadow: 0 0 3px rgb(153, 153, 153);
+        margin-bottom: 20px;
+    }
+
+    .sent-msg {
+        position: absolute;
+        width: 16rem;
+        background: white;
+        padding: 15px 0;
+        text-align: center;
+        font-size: 14px;
+        box-shadow: 0 0 3px rgb(153, 153, 153);
+    }
+
+    .sent-msg input {
+        width: 70%;
+        padding: 10px;
+        border: 1px solid rgb(231, 231, 231);
+        border-radius: 15px;
+        margin: 0 0.5rem;
+    }
+
+    .button-send span,
+    .button-send img {
+        background: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    .button-send img {
+        width: 30px;
+        height: 30px;
+    }
+
+
+    #chat-box {
+        position: relative;
+        top: 40px;
+        padding: 25px 10px;
+        font-size: 12px;
+        height: 24.2rem;
+        overflow: auto;
+        background: rgb(224, 241, 253);
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    /* these classes will be used in javascript file */
+    .msg {
+        background: white;
+        padding: 5px 15px;
+        border-radius: 15px;
+        width: max-content;
+        font-size: 14px;
+        color: lightslategrey;
+        box-shadow: 0 0 5px rgb(226, 226, 226);
+        max-width: 65%;
+        text-align: left;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        /* Smooth fade-in transition */
+    }
+
+
+    .test {
+        text-align: right;
+        margin: 20px 0;
+    }
+
+    .rep {
+        background: rgb(253, 243, 224);
+        color: lightslategray;
+        padding: 5px 15px;
+        border-top-right-radius: 15px;
+        border-bottom-left-radius: 15px;
+        border-top-left-radius: 15px;
+        font-size: 14px;
+        box-shadow: 0 0 5px rgb(211, 211, 211);
+    }
+
+    .opt {
+        padding: 5px 20px;
+        columns: lightsalmon;
+        border: 1px solid blueviolet;
+        border-radius: 1rem;
+        margin: 0.3rem 0.5rem;
+        display: inline-block;
+        cursor: pointer;
+        font-weight: 500;
+        background: white;
+        text-align: center;
+        font-size: 14px;
+        color: blueviolet;
+    }
+
+    .link {
+        text-decoration: none;
+        display: block;
+        text-align: center;
+        color: aliceblue !important;
+        background: blueviolet;
+    }
+
+    .m-link {
+        text-decoration: none;
+    }
+
+    .link:active {
+        background: white;
+        border: 1px solid blueviolet;
+        color: blueviolet;
+    }
+</style>

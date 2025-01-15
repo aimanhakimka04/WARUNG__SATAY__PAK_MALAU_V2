@@ -240,7 +240,7 @@ if ($role == 'admin') {
         if (findText === "customer") {
             // Special case for "Customer Support"
             var supportElm = document.createElement("p");
-            supportElm.innerHTML = "<p>👋 <strong>Need Assistance?</strong><br>Click on the link provided below to connect with our customer service team for help!</p><p>🔗 <a href='http://localhost/' style='color: blue; text-decoration: underline;'>Connect with Customer Service</a></p>";
+            supportElm.innerHTML = "<p>👋 <strong>Need Assistance?</strong><br>Click on the link provided below to connect with our customer service team for help!</p><p>🔗 <a href='http://localhost/customerchat.php' style='color: blue; text-decoration: underline;'>Connect with Customer Service</a></p>";
             supportElm.setAttribute("class", "msg");
             cbot.appendChild(supportElm);
             var mainMenuOpt = document.createElement("span");
